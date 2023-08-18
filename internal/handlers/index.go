@@ -1,12 +1,19 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 	"net/http"
-
-	"github.com/julienschmidt/httprouter"
 )
 
-func (app *Application) Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprintf(w, "Hello world!")
+func (app *Application) GetIndex() http.HandlerFunc {
+	requiredTemplates := []string{"index"}
+
+	tmpl, err := app.createTemplate(requiredTemplates)
+	if err != nil {
+		log.Fatalf("Failed to load templates: %s", err.Error())
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		tmpl.ExecuteTemplate(w, "base", nil)
+	}
 }
