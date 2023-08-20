@@ -1,3 +1,8 @@
 {{define "content"}}
 <h1 class="bg-red-600">Welcome to FrogBoard</h1>
+<ul>
+    {{range .Threads}}
+        <li>Title: {{.Title}} Content: {{.Content}}</li>
+    {{end}}
+</ul>
 {{end}}

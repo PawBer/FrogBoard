@@ -5,15 +5,19 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
 
 type Application struct {
-	InfoLog   *log.Logger
-	ErrorLog  *log.Logger
-	Templates embed.FS
-	Public    embed.FS
+	InfoLog     *log.Logger
+	ErrorLog    *log.Logger
+	BoardModel  *models.BoardModel
+	ThreadModel *models.ThreadModel
+	ReplyModel  *models.ReplyModel
+	Templates   embed.FS
+	Public      embed.FS
 }
 
 func (app *Application) GetRouter() http.Handler {

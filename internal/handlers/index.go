@@ -14,6 +14,10 @@ func (app *Application) GetIndex() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.ExecuteTemplate(w, "base", nil)
+		threads, _ := app.ThreadModel.GetLatest("b")
+		data := map[string]interface{}{
+			"Threads": threads,
+		}
+		tmpl.ExecuteTemplate(w, "base", &data)
 	}
 }
