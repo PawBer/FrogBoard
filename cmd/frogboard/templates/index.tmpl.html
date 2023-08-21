@@ -3,7 +3,7 @@
 <h2 class="mb-2 text-3xl font-bold">Boards</h2>
 <nav class="flex px-4 py-2">
     {{range .Boards}}
-        <a class="text-blue-600 font-medium hover:underline" href="/{{.ID}}">{{.ID}} - {{.FullName}}</li>
+        <a class="text-blue-600 font-medium hover:underline" href="/{{.ID}}/">{{.ID}} - {{.FullName}}</li>
     {{end}}
 </nav>
 {{end}}

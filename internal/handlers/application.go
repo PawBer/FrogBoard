@@ -6,8 +6,7 @@ import (
 	"net/http"
 
 	"github.com/PawBer/FrogBoard/internal/models"
-	"github.com/julienschmidt/httprouter"
-	"github.com/justinas/alice"
+	"github.com/go-chi/chi/v5"
 )
 
 type Application struct {
@@ -21,14 +20,16 @@ type Application struct {
 }
 
 func (app *Application) GetRouter() http.Handler {
-	router := httprouter.New()
+	router := chi.NewRouter()
 
-	router.Handler(http.MethodGet, "/public/*filepath", app.GetPublic())
+	// Middleware
+	router.Use(app.Logging)
 
-	router.HandlerFunc(http.MethodGet, "/", app.GetIndex())
+	router.Get("/public/*", app.GetPublic())
 
-	// Setting up middleware
-	logging := app.Logging
+	router.Get("/", app.GetIndex())
+	router.Get("/{boardId}/", app.GetBoard())
+	router.Mount("/{boardId}", app.GetBoard())
 
-	return alice.New(logging).Then(router)
+	return router
 }
