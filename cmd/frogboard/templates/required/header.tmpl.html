@@ -1,7 +1,7 @@
 {{define "header"}}
 <div class="bg-green-600 text-white p-4">
     <div class="max-w-screen-xl flex items-center justify-between mx-auto flex-col lg:flex-row" >
-        <div class="flex w-full items-center justify-between lg:w-52">
+        <div class="flex w-full items-center justify-between md:w-52">
             <a href="/" class="flex items-center w-52">
                 <div class="flex-1 mr-3">
                     <img class="object-cover" src="/public/frog.svg"/>
@@ -11,13 +11,13 @@
                     >FrogBoard</span
                 >
             </a>
-            <button type="button" id="hamburger-button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-white rounded-lg lg:hidden hover:bg-gray-100">
+            <button type="button" id="hamburger-button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-white rounded-lg md:hidden hover:bg-gray-100">
                 <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
                 </svg>
             </button>
         </div>
-        <nav id="navbar" class="flex flex-col lg:flex-row text-2xl items-center lg:flex">
+        <nav id="navbar" class="hidden flex-col md:flex-row text-2xl items-center md:flex">
             <a class="block py-2 lg:py-0 lg:pl-2 lg:pr-3" href="/boards">Boards</a>
             <a class="block py-2 lg:py-0 lg:pl-2 lg:pr-3" href="/login">Login</a>
         </nav>
@@ -30,8 +30,10 @@
     hambugerButton.addEventListener('click', () => {
         if (navbar.classList.contains("hidden")) {
             navbar.classList.remove("hidden");
+            navbar.classList.add("flex")
         } else {
             navbar.classList.add("hidden");
+            navbar.classList.remove("flex")
         }
     });
 </script>

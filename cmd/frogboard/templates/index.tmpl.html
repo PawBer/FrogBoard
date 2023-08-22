@@ -1,6 +1,7 @@
 {{define "content"}}
-<h1 class="mb-5 text-5xl font-bold">Welcome to FrogBoard</h1>
-<h2 class="mb-2 text-3xl font-bold">Boards</h2>
+<h1 class="my-5 text-3xl md:text-5xl font-bold">Welcome to FrogBoard</h1>
+<hr class="w-3/4 mb-4">
+<h2 class="mb-2 text-2xl md:text-3xl font-bold">Boards</h2>
 <nav class="flex px-4 py-2">
     {{range .Boards}}
         <a class="text-blue-600 font-medium hover:underline" href="/{{.ID}}/">{{.ID}} - {{.FullName}}</li>
