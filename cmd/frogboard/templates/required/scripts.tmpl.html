@@ -1,0 +1,60 @@
+{{define "scripts"}}
+<script>
+    const timeElems = document.querySelectorAll("time");
+
+    timeElems.forEach(timeElem => {
+        const dateTime = timeElem.getAttribute("datetime");
+        const date = new Date(dateTime);
+
+        const localizedDate = date.toLocaleString();
+
+        timeElem.textContent = localizedDate;
+    });
+</script>
+<script>
+    const updateHash = () => {
+        const id = window.location.hash.slice(1);
+        const post = document.getElementById(id);
+
+        if (post) {
+            post.classList.add("bg-red-100")
+            window.setTimeout(() => {
+                post.classList.remove("bg-red-100");
+            }, 1000);
+        }
+    }
+
+    if (window.location.hash) {
+        updateHash();
+    }
+    window.addEventListener("hashchange", updateHash);
+</script>
+<script>
+    const postLinks = document.getElementsByClassName("post-link");
+    console.log(postLinks)
+    for (let link of postLinks) {
+        const postId = link.dataset.post;
+        if (!postId) {
+            continue;
+        }
+
+        link.addEventListener("mouseover", (e) => {
+            const post = document.getElementById(`p${postId}`)
+            if (!post) {
+                return;
+            }
+
+            post.classList.add("bg-red-100")
+        });
+
+        link.addEventListener("mouseleave", (e) => {
+            const post = document.getElementById(`p${postId}`)
+            if (!post) {
+                return;
+            }
+
+            post.classList.remove("bg-red-100")
+        });
+    }
+</script>
+{{end}}

@@ -1,27 +1,25 @@
 {{define "content"}}
     <div class="flex flex-col w-full px-3 md:px-0 md:w-auto md:max-w-[80vw] md:min-w-[30vw]">
-    {{range .Threads}}
-        {{with .Thread}}
-        <div id="p{{.ID}}" class="flex flex-col border border-gray-300 rounded-md shadow my-2 w-full">
-            <div class="flex flex-col bg-gray-100 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2">
+    {{with .Thread}}
+        <div class="flex flex-col border border-gray-300 rounded-md shadow my-2 w-full">
+            <div id="p{{.ID}}" class="flex flex-col bg-gray-100 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2">
                 <span class="pb-2 md:pb-0 md:pr-2 font-semibold">{{.Title}}</span>
                 <time class="pb-2 md:pb-0 md:pr-2" datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
-                <a class="text-blue-500" href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
+                <a class="text-blue-500" href="#p{{.ID}}">>> {{.ID}}</a>
             </div>
             <p class="mb-2 mx-1">{{.FormatedContent .BoardID}}</p>
-        {{end}}
+    {{end}}
             <div class="flex flex-col justify-start w-full">
-        {{range .Replies}}
+    {{range .Replies}}
                 <div id="p{{.ID}}" class="border border-gray-300 rounded-md w-fit m-1">
                     <div class="flex flex-col bg-gray-100 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2">
                         <time class="pb-2 md:pb-0 md:pr-2" datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
-                        <a class="text-blue-500" href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
+                        <a class="text-blue-500" href="#p{{.ID}}">>> {{.ID}}</a>
                     </div>
                     <p class="mb-2 mx-1">{{.FormatedContent .BoardID}}</p>
                 </div>
-        {{end}}
+    {{end}}
             </div>
         </div>
-    {{end}} 
     </div>
 {{end}}

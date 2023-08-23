@@ -13,7 +13,7 @@ type ReplyModel struct {
 	DbConn *gorm.DB
 }
 
-func (m *ReplyModel) GetRepliesToPost(boardId string, threadId int) ([]Reply, error) {
+func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, error) {
 	var replies []Reply
 
 	result := m.DbConn.Where("board_id = $1 and thread_id = $2", boardId, threadId).Order("id asc").Find(&replies)
@@ -39,7 +39,7 @@ func (m *ReplyModel) GetLatestReplies(boardId string, threadId, limit int) ([]Re
 func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 	var reply Reply
 
-	result := m.DbConn.Where("board_id = $1 and id = $2", boardId, replyId).Find(&reply)
+	result := m.DbConn.Order("id asc").Where("board_id = $1 and id = $2", boardId, replyId).Take(&reply)
 	if err := result.Error; err != nil {
 		return nil, err
 	}

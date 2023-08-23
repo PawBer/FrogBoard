@@ -27,7 +27,7 @@ func (m *ThreadModel) GetLatest(boardID string) ([]Thread, error) {
 func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	var thread Thread
 
-	result := m.DbConn.Where("board_id = $1 and id = $2", boardId, threadId).Find(&thread)
+	result := m.DbConn.Order("id asc").Where("board_id = $1 and id = $2", boardId, threadId).Take(&thread)
 	if err := result.Error; err != nil {
 		return nil, err
 	}
