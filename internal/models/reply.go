@@ -1,6 +1,8 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Reply struct {
 	Post
@@ -11,10 +13,10 @@ type ReplyModel struct {
 	DbConn *gorm.DB
 }
 
-func (m *ReplyModel) GetRepliesToPost(threadId string) ([]Reply, error) {
+func (m *ReplyModel) GetRepliesToPost(boardId string, threadId int) ([]Reply, error) {
 	var replies []Reply
 
-	result := m.DbConn.Where("thread_id = $1", threadId).Order("id asc").Find(&replies)
+	result := m.DbConn.Where("board_id = $1 and thread_id = $2", boardId, threadId).Order("id asc").Find(&replies)
 	if err := result.Error; err != nil {
 		return nil, err
 	}
@@ -22,10 +24,22 @@ func (m *ReplyModel) GetRepliesToPost(threadId string) ([]Reply, error) {
 	return replies, nil
 }
 
-func (m *ReplyModel) Get(boardId string, ReplyId uint) (*Reply, error) {
+func (m *ReplyModel) GetLatestReplies(boardId string, threadId, limit int) ([]Reply, error) {
+	var replies []Reply
+
+	subquery := m.DbConn.Limit(limit).Where("board_id = $1 and thread_id = $2", boardId, threadId).Order("id desc")
+	result := m.DbConn.Model(&Reply{}).Order("id asc").Find(&replies, subquery)
+	if err := result.Error; err != nil {
+		return nil, err
+	}
+
+	return replies, nil
+}
+
+func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 	var reply Reply
 
-	result := m.DbConn.Where("board_id = $1 and id = $2", boardId, ReplyId).Find(&reply)
+	result := m.DbConn.Where("board_id = $1 and id = $2", boardId, replyId).Find(&reply)
 	if err := result.Error; err != nil {
 		return nil, err
 	}
