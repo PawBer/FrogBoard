@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (app *Application) GetThread() http.HandlerFunc {
+func (app *Application) GetPost() http.HandlerFunc {
 	requiredTemplates := []string{"thread"}
 
 	tmpl, err := app.createTemplate(requiredTemplates)
@@ -39,9 +39,14 @@ func (app *Application) GetThread() http.HandlerFunc {
 		replies, _ := app.ReplyModel.GetRepliesToPost(boardId, uint(postId))
 
 		templateData := map[string]interface{}{
+			"BoardID": boardId,
 			"Thread":  thread,
 			"Replies": replies,
 		}
-		tmpl.ExecuteTemplate(w, "base", &templateData)
+
+		err = tmpl.ExecuteTemplate(w, "base", &templateData)
+		if err != nil {
+			app.ErrorLog.Printf("Error executing template: %s\n", err.Error())
+		}
 	}
 }

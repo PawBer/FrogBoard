@@ -17,9 +17,12 @@
         const post = document.getElementById(id);
 
         if (post) {
-            post.classList.add("bg-red-100")
+            post.classList.add("bg-red-100");
+            post.children[0].classList.remove("bg-gray-100");
+
             window.setTimeout(() => {
                 post.classList.remove("bg-red-100");
+                post.children[0].classList.add("bg-gray-100");
             }, 1000);
         }
     }
@@ -29,9 +32,26 @@
     }
     window.addEventListener("hashchange", updateHash);
 </script>
+{{if index . "BoardID"}}
+<div id="post-preview" class="hidden fixed bg-white border border-gray-300 rounded-md w-fit m-2">
+    <div class="flex flex-col bg-gray-100 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2">
+        <time id="post-time" class="pb-2 md:pb-0 md:pr-2"></time>
+    </div>
+    <p id="post-content" class="mb-2 mx-1"></p>
+</div>
 <script>
+    function isElementVisible(element) {
+        const rect = element.getBoundingClientRect();
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+        const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+
+        const isVerticalVisible = rect.top < windowHeight && rect.bottom > 0;
+        const isHorizontalVisible = rect.left < windowWidth && rect.right > 0;
+
+        return isVerticalVisible && isHorizontalVisible;
+    }
+
     const postLinks = document.getElementsByClassName("post-link");
-    console.log(postLinks)
     for (let link of postLinks) {
         const postId = link.dataset.post;
         if (!postId) {
@@ -40,21 +60,46 @@
 
         link.addEventListener("mouseover", (e) => {
             const post = document.getElementById(`p${postId}`)
-            if (!post) {
+            if (!post || !isElementVisible(post)) {
+                fetch("/api/post/{{.BoardID}}/" + postId).then((resp) => {
+                    resp.json().then((json) => {
+                        const postDiv = document.getElementById("post-preview");
+                        const timeElem = document.getElementById("post-time");
+                        const postContentElem = document.getElementById("post-content");
+
+                        const boundingRect = link.getBoundingClientRect()
+
+                        const creationDate = new Date(json.CreatedAt).toLocaleString();
+                        timeElem.textContent = creationDate;
+                        
+                        postContentElem.textContent = json.Content;
+
+                        postDiv.style.top = Math.floor(boundingRect.top) + "px";
+                        postDiv.style.left = Math.floor(boundingRect.right + 5) + "px";
+
+                        postDiv.classList.remove("hidden");
+                    });
+                });
+
                 return;
             }
 
-            post.classList.add("bg-red-100")
+            post.children[0].classList.remove("bg-gray-100");
+            post.classList.add("bg-red-100");
         });
 
         link.addEventListener("mouseleave", (e) => {
             const post = document.getElementById(`p${postId}`)
-            if (!post) {
+            if (!post || !isElementVisible(post)) {
+                const postDiv = document.getElementById("post-preview");
+                postDiv.classList.add("hidden");
                 return;
             }
 
-            post.classList.remove("bg-red-100")
+            post.children[0].classList.add("bg-gray-100");
+            post.classList.remove("bg-red-100");
         });
     }
 </script>
+{{end}}
 {{end}}

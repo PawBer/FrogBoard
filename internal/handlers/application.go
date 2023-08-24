@@ -30,8 +30,9 @@ func (app *Application) GetRouter() http.Handler {
 	router.Get("/", app.GetIndex())
 	router.Get("/{boardId}/", app.GetBoard())
 	router.Mount("/{boardId}", app.GetBoard())
-	router.Get("/{boardId}/{postId}", app.GetThread())
-	router.Mount("/{boardId}/{postId}/", app.GetThread())
+	router.Get("/{boardId}/{postId}", app.GetPost())
+	router.Mount("/{boardId}/{postId}/", app.GetPost())
+	router.Get("/api/post/{boardId}/{postId}", app.GetPostJson)
 
 	return router
 }

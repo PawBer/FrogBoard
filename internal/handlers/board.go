@@ -41,8 +41,12 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		}
 
 		templateData := map[string]interface{}{
+			"BoardID": boardId,
 			"Threads": threadsTemplate,
 		}
-		tmpl.ExecuteTemplate(w, "base", &templateData)
+		err = tmpl.ExecuteTemplate(w, "base", &templateData)
+		if err != nil {
+			app.ErrorLog.Printf("Error executing template: %s\n", err.Error())
+		}
 	}
 }
