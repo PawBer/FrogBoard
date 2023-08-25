@@ -61,7 +61,7 @@
         link.addEventListener("mouseover", (e) => {
             const post = document.getElementById(`p${postId}`)
             if (!post || !isElementVisible(post)) {
-                fetch("/api/post/{{.BoardID}}/" + postId).then((resp) => {
+                fetch("/api/post/{{.BoardID}}/" + postId + "/").then((resp) => {
                     resp.json().then((json) => {
                         const postDiv = document.getElementById("post-preview");
                         const timeElem = document.getElementById("post-time");

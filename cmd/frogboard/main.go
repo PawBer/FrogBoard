@@ -8,6 +8,7 @@ import (
 
 	"github.com/PawBer/FrogBoard/internal/handlers"
 	"github.com/PawBer/FrogBoard/internal/models"
+	"github.com/go-playground/form"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -28,6 +29,8 @@ func main() {
 		log.Fatalf("Error connecting to db: %s", err.Error())
 	}
 
+	formDecoder := form.NewDecoder()
+
 	db.AutoMigrate(&models.Board{}, &models.Thread{}, &models.Reply{})
 
 	app := handlers.Application{
@@ -38,6 +41,7 @@ func main() {
 		ReplyModel:  &models.ReplyModel{DbConn: db},
 		Templates:   templates,
 		Public:      public,
+		FormDecoder: formDecoder,
 	}
 
 	log.Printf("Starting server at :8080")

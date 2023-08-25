@@ -50,3 +50,33 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		}
 	}
 }
+
+func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
+	boardId := chi.URLParam(r, "boardId")
+
+	formModel := struct {
+		Title   string `form:"title"`
+		Content string `form:"content"`
+	}{}
+
+	r.ParseForm()
+
+	err := app.FormDecoder.Decode(&formModel, r.Form)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
+		fmt.Fprint(w, "Form error")
+		return
+	}
+
+	postId, err := app.ThreadModel.Insert(boardId, formModel.Title, formModel.Content)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(app.ErrorLog.Writer(), "Error inserting thread: %s\n", err.Error())
+		fmt.Fprint(w, "Insert error")
+		return
+	}
+
+	url := fmt.Sprintf("/%s/%d/", boardId, postId)
+	http.Redirect(w, r, url, http.StatusMovedPermanently)
+}

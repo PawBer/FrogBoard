@@ -7,6 +7,7 @@ import (
 
 	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-playground/form"
 )
 
 type Application struct {
@@ -17,6 +18,7 @@ type Application struct {
 	ReplyModel  *models.ReplyModel
 	Templates   embed.FS
 	Public      embed.FS
+	FormDecoder *form.Decoder
 }
 
 func (app *Application) GetRouter() http.Handler {
@@ -29,10 +31,10 @@ func (app *Application) GetRouter() http.Handler {
 
 	router.Get("/", app.GetIndex())
 	router.Get("/{boardId}/", app.GetBoard())
-	router.Mount("/{boardId}", app.GetBoard())
-	router.Get("/{boardId}/{postId}", app.GetPost())
-	router.Mount("/{boardId}/{postId}/", app.GetPost())
-	router.Get("/api/post/{boardId}/{postId}", app.GetPostJson)
+	router.Post("/{boardId}/", app.PostBoard)
+	router.Get("/{boardId}/{postId}/", app.GetPost())
+	router.Post("/{boardId}/{postId}/", app.PostThread)
+	router.Get("/api/post/{boardId}/{postId}/", app.GetPostJson)
 
 	return router
 }
