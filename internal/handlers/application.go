@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/PawBer/FrogBoard/internal/models"
+	"github.com/PawBer/FrogBoard/pkg/filestorage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/form"
 )
@@ -19,6 +20,7 @@ type Application struct {
 	Templates   embed.FS
 	Public      embed.FS
 	FormDecoder *form.Decoder
+	FileStore   filestorage.FileStore
 }
 
 func (app *Application) GetRouter() http.Handler {

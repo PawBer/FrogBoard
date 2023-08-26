@@ -8,9 +8,11 @@ import (
 
 	"github.com/PawBer/FrogBoard/internal/handlers"
 	"github.com/PawBer/FrogBoard/internal/models"
+	"github.com/PawBer/FrogBoard/pkg/filestorage"
 	"github.com/go-playground/form"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 //go:embed templates
@@ -24,12 +26,16 @@ func main() {
 	errorLog := log.New(os.Stderr, "WARNING ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	connStr := "host=localhost user=frogboard dbname=frogboard password=frogboardpassword sslmode=disable"
-	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		log.Fatalf("Error connecting to db: %s", err.Error())
 	}
 
 	formDecoder := form.NewDecoder()
+
+	fileStore := filestorage.NewFileSystemStore("files")
 
 	db.AutoMigrate(&models.Board{}, &models.Thread{}, &models.Reply{})
 
@@ -42,6 +48,7 @@ func main() {
 		Templates:   templates,
 		Public:      public,
 		FormDecoder: formDecoder,
+		FileStore:   fileStore,
 	}
 
 	log.Printf("Starting server at :8080")
