@@ -17,7 +17,7 @@ type BoardModel struct {
 func (m *BoardModel) GetBoards() ([]Board, error) {
 	var boards []Board
 
-	result := m.DbConn.Order("id desc").Find(&boards)
+	result := m.DbConn.Order("id asc").Find(&boards)
 	if err := result.Error; err != nil {
 		return nil, err
 	}

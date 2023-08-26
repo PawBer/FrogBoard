@@ -38,8 +38,17 @@ func (app *Application) GetPost() http.HandlerFunc {
 		}
 		replies, _ := app.ReplyModel.GetRepliesToPost(boardId, uint(postId))
 
+		boards, err := app.BoardModel.GetBoards()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting boards: %s\n", err.Error())
+			fmt.Fprint(w, "Could not get boards")
+			return
+		}
+
 		templateData := map[string]interface{}{
 			"BoardID": boardId,
+			"Boards":  boards,
 			"Thread":  thread,
 			"Replies": replies,
 		}

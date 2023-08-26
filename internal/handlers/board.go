@@ -21,7 +21,10 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		boardId := chi.URLParam(r, "boardId")
 		threads, err := app.ThreadModel.GetLatest(boardId)
 		if err != nil {
-			fmt.Printf("Error getting threads: %s\n", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting threads: %s\n", err.Error())
+			fmt.Fprint(w, "Could not get threads")
+			return
 		}
 
 		threadsTemplate := []struct {
@@ -40,8 +43,17 @@ func (app *Application) GetBoard() http.HandlerFunc {
 			})
 		}
 
+		boards, err := app.BoardModel.GetBoards()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting boards: %s\n", err.Error())
+			fmt.Fprint(w, "Could not get boards")
+			return
+		}
+
 		templateData := map[string]interface{}{
 			"BoardID": boardId,
+			"Boards":  boards,
 			"Threads": threadsTemplate,
 		}
 		err = tmpl.ExecuteTemplate(w, "base", &templateData)

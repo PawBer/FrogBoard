@@ -7,10 +7,13 @@
     <link rel="stylesheet" href="/public/style.css">
     <title>FrogBoard</title>
 </head>
-<body>
+<body class="flex flex-col min-h-[100vh]">
     {{template "header" .}}
-    <div class="flex justify-center h-full w-full pt-4">
+    <div class="flex justify-center h-full w-full pt-4 pb-4 flex-grow">
         {{template "content" .}}
+    </div>
+    <div class="bg-green-600 flex items-center justify-center w-full mt-auto p-1">
+        <p class="text-white">Powered by</p>&nbsp;<a class="text-white underline" href="https://github.com/PawBer/FrogBoard">FrogBoard</a>
     </div>
     {{template "scripts" .}}
 </body>
