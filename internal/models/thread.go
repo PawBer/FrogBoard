@@ -1,7 +1,9 @@
 package models
 
 import (
-	"gorm.io/gorm"
+	"time"
+
+	"github.com/doug-martin/goqu/v9"
 )
 
 type Thread struct {
@@ -10,15 +12,38 @@ type Thread struct {
 }
 
 type ThreadModel struct {
-	DbConn *gorm.DB
+	DbConn *goqu.Database
 }
 
-func (m *ThreadModel) GetLatest(boardID string) ([]Thread, error) {
+func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 	var threads []Thread
 
-	result := m.DbConn.Limit(10).Where("board_id = $1", boardID).Order("id desc").Find(&threads)
-	if err := result.Error; err != nil {
+	sql, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+		"board_id": boardId,
+	}).Order(goqu.I("id").Desc()).Limit(10).ToSQL()
+
+	rows, err := m.DbConn.Query(sql, params...)
+	if err != nil {
 		return nil, err
+	}
+
+	for rows.Next() {
+		var id uint
+		var boardId, content, title string
+		var creationTime time.Time
+
+		rows.Scan(&id, &boardId, &creationTime, &content, &title)
+		thread := Thread{
+			Post: Post{
+				ID:        id,
+				BoardID:   boardId,
+				CreatedAt: creationTime,
+				Content:   content,
+			},
+			Title: title,
+		}
+
+		threads = append(threads, thread)
 	}
 
 	return threads, nil
@@ -27,8 +52,15 @@ func (m *ThreadModel) GetLatest(boardID string) ([]Thread, error) {
 func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	var thread Thread
 
-	result := m.DbConn.Order("id asc").Where("board_id = $1 and id = $2", boardId, threadId).Take(&thread)
-	if err := result.Error; err != nil {
+	sql, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+		"board_id": boardId,
+		"id":       threadId,
+	}).ToSQL()
+
+	row := m.DbConn.QueryRow(sql, params...)
+
+	err := row.Scan(&thread.ID, &thread.BoardID, &thread.CreatedAt, &thread.Content, &thread.Title)
+	if err != nil {
 		return nil, err
 	}
 
@@ -37,44 +69,64 @@ func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 
 func (m *ThreadModel) Insert(boardId, title, content string) (uint, error) {
 	var board Board
-	var thread Thread
 
-	m.DbConn.Transaction(func(tx *gorm.DB) error {
-		result := m.DbConn.Select("id, last_post_id").Find(&board)
-		if err := result.Error; err != nil {
-			m.DbConn.Rollback()
-			return err
-		}
+	tx, err := m.DbConn.Begin()
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	sql, params, _ := m.DbConn.From("boards").Where(goqu.Ex{
+		"id": boardId,
+	}).Select("id", "last_post_id").ToSQL()
 
-		thread = Thread{
-			Post: Post{
-				ID:      board.LastPostID + 1,
-				BoardID: boardId,
-				Content: content,
-			},
-			Title: title,
-		}
-		result = m.DbConn.Create(&thread)
-		if err := result.Error; err != nil {
-			m.DbConn.Rollback()
-			return err
-		}
+	row := tx.QueryRow(sql, params...)
+	err = row.Scan(&board.ID, &board.LastPostID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
 
-		result = m.DbConn.Model(&board).Update("last_post_id", board.LastPostID+1)
-		if err := result.Error; err != nil {
-			m.DbConn.Rollback()
-			return err
-		}
+	sql, params, _ = m.DbConn.Insert("threads").Rows(goqu.Record{
+		"id":         board.LastPostID + 1,
+		"board_id":   boardId,
+		"content":    content,
+		"created_at": goqu.V("NOW()"),
+		"title":      title,
+	}).ToSQL()
 
-		return nil
-	})
+	var lastInsertId uint
+	err = tx.QueryRow(sql+" RETURNING id", params...).Scan(&lastInsertId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
 
-	return thread.ID, nil
+	sql, params, _ = goqu.Update("boards").Set(goqu.Record{
+		"last_post_id": board.LastPostID + 1,
+	}).Where(goqu.Ex{"id": board.ID}).ToSQL()
+
+	_, err = tx.Exec(sql, params...)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return 0, err
+	}
+
+	return lastInsertId, nil
 }
 
 func (m *ThreadModel) Update(thread *Thread) error {
-	result := m.DbConn.Save(thread)
-	if err := result.Error; err != nil {
+	sql, params, _ := goqu.Update("threads").Set(goqu.Record{
+		"title":   thread.Title,
+		"content": thread.Content,
+	}).Where(goqu.Ex{"id": thread.ID}).ToSQL()
+
+	_, err := m.DbConn.Exec(sql, params...)
+	if err != nil {
 		return err
 	}
 
@@ -82,8 +134,10 @@ func (m *ThreadModel) Update(thread *Thread) error {
 }
 
 func (m *ThreadModel) Delete(id uint) error {
-	result := m.DbConn.Delete(&Thread{}, id)
-	if err := result.Error; err != nil {
+	sql, params, _ := goqu.Delete("threads").Where(goqu.Ex{"id": id}).ToSQL()
+
+	_, err := m.DbConn.Exec(sql, params...)
+	if err != nil {
 		return err
 	}
 

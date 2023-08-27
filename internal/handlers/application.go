@@ -12,15 +12,16 @@ import (
 )
 
 type Application struct {
-	InfoLog     *log.Logger
-	ErrorLog    *log.Logger
-	BoardModel  *models.BoardModel
-	ThreadModel *models.ThreadModel
-	ReplyModel  *models.ReplyModel
-	Templates   embed.FS
-	Public      embed.FS
-	FormDecoder *form.Decoder
-	FileStore   filestorage.FileStore
+	InfoLog       *log.Logger
+	ErrorLog      *log.Logger
+	BoardModel    *models.BoardModel
+	ThreadModel   *models.ThreadModel
+	ReplyModel    *models.ReplyModel
+	FileInfoModel *models.FileInfoModel
+	Templates     embed.FS
+	Public        embed.FS
+	FormDecoder   *form.Decoder
+	FileStore     filestorage.FileStore
 }
 
 func (app *Application) GetRouter() http.Handler {
@@ -36,6 +37,7 @@ func (app *Application) GetRouter() http.Handler {
 	router.Post("/{boardId}/", app.PostBoard)
 	router.Get("/{boardId}/{postId}/", app.GetPost())
 	router.Post("/{boardId}/{postId}/", app.PostThread)
+	router.Get("/file/{hash}/", app.GetFile)
 	router.Get("/api/post/{boardId}/{postId}/", app.GetPostJson)
 
 	return router

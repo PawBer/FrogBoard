@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"gorm.io/gorm"
 )
 
 func (app *Application) GetPostJson(w http.ResponseWriter, r *http.Request) {
@@ -16,9 +16,9 @@ func (app *Application) GetPostJson(w http.ResponseWriter, r *http.Request) {
 	postId, _ := strconv.ParseUint(postIdStr, 10, 32)
 
 	thread, err := app.ThreadModel.Get(boardId, uint(postId))
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		reply, err := app.ReplyModel.Get(boardId, uint(postId))
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		if err != nil && errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
 			return
 		}

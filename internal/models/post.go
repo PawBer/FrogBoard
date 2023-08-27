@@ -8,10 +8,11 @@ import (
 )
 
 type Post struct {
-	ID        uint   `gorm:"primarykey"`
-	BoardID   string `gorm:"primarykey"`
+	ID        uint
+	BoardID   string
 	CreatedAt time.Time
 	Content   string
+	Files     []FileInfo
 }
 
 var PostReferenceRegex = regexp.MustCompile(">> ([1-9]+)")
@@ -21,7 +22,7 @@ func (p Post) FormatCreationDate() string {
 }
 
 func (p Post) FormatedContent(boardId string) template.HTML {
-	replacement := fmt.Sprintf(`<a data-post="$1" class="post-link text-blue-500" href="/%s/$1">>> $1</a>`, boardId)
+	replacement := fmt.Sprintf(`<a data-post="$1" class="post-link text-blue-500" href="/%s/$1/">>> $1</a>`, boardId)
 
 	return template.HTML(PostReferenceRegex.ReplaceAllString(p.Content, replacement))
 }

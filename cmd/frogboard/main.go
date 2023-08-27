@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"embed"
 	"log"
 	"net/http"
@@ -9,10 +10,10 @@ import (
 	"github.com/PawBer/FrogBoard/internal/handlers"
 	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/PawBer/FrogBoard/pkg/filestorage"
+	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/go-playground/form"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	_ "github.com/lib/pq"
 )
 
 //go:embed templates
@@ -26,29 +27,28 @@ func main() {
 	errorLog := log.New(os.Stderr, "WARNING ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	connStr := "host=localhost user=frogboard dbname=frogboard password=frogboardpassword sslmode=disable"
-	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
+	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("Error connecting to db: %s", err.Error())
 	}
+
+	db := goqu.Dialect("postgres").DB(dbConn)
 
 	formDecoder := form.NewDecoder()
 
 	fileStore := filestorage.NewFileSystemStore("files")
 
-	db.AutoMigrate(&models.Board{}, &models.Thread{}, &models.Reply{})
-
 	app := handlers.Application{
-		InfoLog:     infoLog,
-		ErrorLog:    errorLog,
-		BoardModel:  &models.BoardModel{DbConn: db},
-		ThreadModel: &models.ThreadModel{DbConn: db},
-		ReplyModel:  &models.ReplyModel{DbConn: db},
-		Templates:   templates,
-		Public:      public,
-		FormDecoder: formDecoder,
-		FileStore:   fileStore,
+		InfoLog:       infoLog,
+		ErrorLog:      errorLog,
+		BoardModel:    &models.BoardModel{DbConn: db},
+		ThreadModel:   &models.ThreadModel{DbConn: db},
+		ReplyModel:    &models.ReplyModel{DbConn: db},
+		FileInfoModel: &models.FileInfoModel{DbConn: db, FileStore: fileStore},
+		Templates:     templates,
+		Public:        public,
+		FormDecoder:   formDecoder,
+		FileStore:     fileStore,
 	}
 
 	log.Printf("Starting server at :8080")

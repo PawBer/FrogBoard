@@ -1,8 +1,6 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
+import "github.com/doug-martin/goqu/v9"
 
 type Board struct {
 	ID         string
@@ -11,29 +9,40 @@ type Board struct {
 }
 
 type BoardModel struct {
-	DbConn *gorm.DB
+	DbConn *goqu.Database
 }
 
 func (m *BoardModel) GetBoards() ([]Board, error) {
 	var boards []Board
 
-	result := m.DbConn.Order("id asc").Find(&boards)
-	if err := result.Error; err != nil {
+	sql, params, _ := m.DbConn.From("boards").Select("id", "full_name").ToSQL()
+	rows, err := m.DbConn.Query(sql, params...)
+	if err != nil {
 		return nil, err
+	}
+
+	for rows.Next() {
+		var id, fullName string
+
+		rows.Scan(&id, &fullName)
+		board := Board{
+			ID:       id,
+			FullName: fullName,
+		}
+
+		boards = append(boards, board)
 	}
 
 	return boards, nil
 }
 
 func (m *BoardModel) Insert(id, name string) error {
-	board := Board{
-		ID:         id,
-		FullName:   name,
-		LastPostID: 0,
-	}
+	sql, params, _ := goqu.Insert("boards").Rows(
+		goqu.Record{"id": id, "full_name": name, "last_post_id": 0},
+	).ToSQL()
 
-	result := m.DbConn.Create(&board)
-	if err := result.Error; err != nil {
+	_, err := m.DbConn.Exec(sql, params...)
+	if err != nil {
 		return err
 	}
 
@@ -41,20 +50,24 @@ func (m *BoardModel) Insert(id, name string) error {
 }
 
 func (m *BoardModel) Delete(id string) error {
-	result := m.DbConn.Delete(&Board{}, id)
-	if err := result.Error; err != nil {
+	sql, params, _ := goqu.Delete("boards").Where(goqu.Ex{"id": id}).ToSQL()
+
+	_, err := m.DbConn.Exec(sql, params...)
+	if err != nil {
 		return err
 	}
-	result = m.DbConn.Where("board_id = $1", id).Delete(&Post{})
-	if err := result.Error; err != nil {
-		return err
-	}
+
 	return nil
 }
 
-func (m *BoardModel) Update(board *Board) error {
-	result := m.DbConn.Save(board)
-	if err := result.Error; err != nil {
+func (m *BoardModel) Update(board Board) error {
+	sql, params, _ := goqu.Update("boards").Set(goqu.Record{
+		"full_name":    board.FullName,
+		"last_post_id": board.LastPostID,
+	}).Where(goqu.Ex{"id": board.ID}).ToSQL()
+
+	_, err := m.DbConn.Exec(sql, params...)
+	if err != nil {
 		return err
 	}
 

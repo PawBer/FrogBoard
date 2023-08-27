@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -8,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"gorm.io/gorm"
 )
 
 func (app *Application) GetPost() http.HandlerFunc {
@@ -25,9 +25,9 @@ func (app *Application) GetPost() http.HandlerFunc {
 		postId, _ := strconv.ParseUint(postIdStr, 10, 32)
 
 		thread, err := app.ThreadModel.Get(boardId, uint(postId))
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		if err != nil && errors.Is(err, sql.ErrNoRows) {
 			reply, err := app.ReplyModel.Get(boardId, uint(postId))
-			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+			if err != nil && errors.Is(err, sql.ErrNoRows) {
 				http.NotFound(w, r)
 				return
 			}
@@ -36,7 +36,34 @@ func (app *Application) GetPost() http.HandlerFunc {
 			http.Redirect(w, r, url, http.StatusPermanentRedirect)
 			return
 		}
-		replies, _ := app.ReplyModel.GetRepliesToPost(boardId, uint(postId))
+
+		files, err := app.FileInfoModel.GetFilesForPost(boardId, thread.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting files for thread: %s\n", err.Error())
+			fmt.Fprint(w, "Could not get files for thread")
+			return
+		}
+		thread.Files = files
+
+		replies, err := app.ReplyModel.GetRepliesToPost(boardId, uint(postId))
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting replies to thread: %s\n", err.Error())
+			fmt.Fprint(w, "Could not get replies")
+			return
+		}
+
+		for i := 0; i < len(replies); i++ {
+			files, err := app.FileInfoModel.GetFilesForPost(boardId, replies[i].ID)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(app.ErrorLog.Writer(), "Error getting files for reply: %s\n", err.Error())
+				fmt.Fprint(w, "Could not get files for reply")
+				return
+			}
+			replies[i].Files = files
+		}
 
 		boards, err := app.BoardModel.GetBoards()
 		if err != nil {

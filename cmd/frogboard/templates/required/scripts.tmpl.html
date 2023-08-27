@@ -61,26 +61,29 @@
         link.addEventListener("mouseover", (e) => {
             const post = document.getElementById(`p${postId}`)
             if (!post || !isElementVisible(post)) {
-                fetch("/api/post/{{.BoardID}}/" + postId + "/").then((resp) => {
-                    resp.json().then((json) => {
-                        const postDiv = document.getElementById("post-preview");
-                        const timeElem = document.getElementById("post-time");
-                        const postContentElem = document.getElementById("post-content");
+                try {
+                    fetch("/api/post/{{.BoardID}}/" + postId + "/").then((resp) => {
+                        resp.json().then((json) => {
+                            const postDiv = document.getElementById("post-preview");
+                            const timeElem = document.getElementById("post-time");
+                            const postContentElem = document.getElementById("post-content");
 
-                        const boundingRect = link.getBoundingClientRect()
+                            const boundingRect = link.getBoundingClientRect()
 
-                        const creationDate = new Date(json.CreatedAt).toLocaleString();
-                        timeElem.textContent = creationDate;
+                            const creationDate = new Date(json.CreatedAt).toLocaleString();
+                            timeElem.textContent = creationDate;
                         
-                        postContentElem.textContent = json.Content;
+                            postContentElem.textContent = json.Content;
 
-                        postDiv.style.top = Math.floor(boundingRect.top) + "px";
-                        postDiv.style.left = Math.floor(boundingRect.right + 5) + "px";
+                            postDiv.style.top = Math.floor(boundingRect.top) + "px";
+                            postDiv.style.left = Math.floor(boundingRect.right + 5) + "px";
 
-                        postDiv.classList.remove("hidden");
-                    });
-                });
-
+                            postDiv.classList.remove("hidden");
+                        });
+                    })
+                } catch {
+                    return;
+                }
                 return;
             }
 

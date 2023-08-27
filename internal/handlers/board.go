@@ -33,7 +33,13 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		}{}
 
 		for _, v := range threads {
-			replies, _ := app.ReplyModel.GetLatestReplies(v.BoardID, int(v.ID), 5)
+			replies, err := app.ReplyModel.GetLatestReplies(v.BoardID, int(v.ID), 5)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(app.ErrorLog.Writer(), "Error getting newest replies: %s\n", err.Error())
+				fmt.Fprint(w, "Could not get replies to thread")
+				return
+			}
 			threadsTemplate = append(threadsTemplate, struct {
 				Thread  models.Thread
 				Replies []models.Reply
