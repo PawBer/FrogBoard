@@ -53,9 +53,19 @@ func (fs *FSFileStore) AddFile(file []byte) (string, error) {
 
 	contentType := http.DetectContentType(file)
 	if strings.Contains(contentType, "image") {
-		resizedImage, err := bimg.NewImage(file).Resize(300, 300)
+		size, err := bimg.Size(file)
 		if err != nil {
 			return "", err
+		}
+
+		var resizedImage []byte
+		if size.Width < 600 {
+			resizedImage = file
+		} else {
+			resizedImage, err = bimg.NewImage(file).Resize(size.Width/3, size.Height/3)
+			if err != nil {
+				return "", err
+			}
 		}
 
 		thumbPath := fmt.Sprintf("%s/%s/%s.thumb", fs.directoryPath, hexString[0:2], hexString[2:])
