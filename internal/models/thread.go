@@ -105,24 +105,26 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []string) (ui
 		return 0, err
 	}
 
-	var rows []goqu.Record
+	if len(files) != 0 {
+		var rows []goqu.Record
 
-	for _, file := range files {
-		row := goqu.Record{
-			"board_id": boardId,
-			"post_id":  lastInsertId,
-			"file_id":  file,
+		for _, file := range files {
+			row := goqu.Record{
+				"board_id": boardId,
+				"post_id":  lastInsertId,
+				"file_id":  file,
+			}
+
+			rows = append(rows, row)
 		}
 
-		rows = append(rows, row)
-	}
+		sql, params, _ = goqu.Insert("post_files").Rows(rows).ToSQL()
 
-	sql, params, _ = goqu.Insert("post_files").Rows(rows).ToSQL()
-
-	_, err = tx.Exec(sql, params...)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
+		_, err = tx.Exec(sql, params...)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 	}
 
 	sql, params, _ = goqu.Update("boards").Set(goqu.Record{
