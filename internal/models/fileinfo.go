@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"net/http"
 	"strings"
 
 	"github.com/PawBer/FrogBoard/pkg/filestorage"
@@ -68,4 +69,18 @@ func (fiModel *FileInfoModel) GetFilesForPost(boardId string, postId uint) ([]Fi
 	}
 
 	return fileInfos, nil
+}
+
+func (fiModel *FileInfoModel) InsertFile(fileName string, file []byte) (string, error) {
+	contentType := http.DetectContentType(file)
+
+	key, err := fiModel.FileStore.AddFile(file)
+	if err != nil {
+		return "", err
+	}
+
+	sql, params, _ := fiModel.DbConn.Insert("file_infos").Rows(goqu.Record{"id": key, "file_name": fileName, "content_type": contentType}).ToSQL()
+	fiModel.DbConn.Exec(sql, params...)
+
+	return key, nil
 }

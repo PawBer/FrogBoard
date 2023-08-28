@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -96,9 +97,7 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 		Content string `form:"content"`
 	}{}
 
-	r.ParseForm()
-
-	err := app.FormDecoder.Decode(&formModel, r.Form)
+	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
@@ -106,7 +105,48 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content)
+	err = app.FormDecoder.Decode(&formModel, r.Form)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
+		fmt.Fprint(w, "Form error")
+		return
+	}
+
+	var fileKeys []string
+
+	files := r.MultipartForm.File["files"]
+
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error opening form files: %s\n", err.Error())
+			fmt.Fprint(w, "Bad files in form")
+			return
+		}
+		defer file.Close()
+
+		buf, err := io.ReadAll(file)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error reading form files: %s\n", err.Error())
+			fmt.Fprint(w, "Bad files in form")
+			return
+		}
+
+		key, err := app.FileInfoModel.InsertFile(fileHeader.Filename, buf)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error uploading file from form: %s\n", err.Error())
+			fmt.Fprint(w, "Bad files in form")
+			return
+		}
+
+		fileKeys = append(fileKeys, key)
+	}
+
+	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content, fileKeys)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(app.ErrorLog.Writer(), "Error inserting reply: %s\n", err.Error())

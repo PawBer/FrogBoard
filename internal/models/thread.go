@@ -71,7 +71,7 @@ func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	return &thread, nil
 }
 
-func (m *ThreadModel) Insert(boardId, title, content string) (uint, error) {
+func (m *ThreadModel) Insert(boardId, title, content string, files []string) (uint, error) {
 	var board Board
 
 	tx, err := m.DbConn.Begin()
@@ -100,6 +100,26 @@ func (m *ThreadModel) Insert(boardId, title, content string) (uint, error) {
 
 	var lastInsertId uint
 	err = tx.QueryRow(sql+" RETURNING id", params...).Scan(&lastInsertId)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	var rows []goqu.Record
+
+	for _, file := range files {
+		row := goqu.Record{
+			"board_id": boardId,
+			"post_id":  lastInsertId,
+			"file_id":  file,
+		}
+
+		rows = append(rows, row)
+	}
+
+	sql, params, _ = goqu.Insert("post_files").Rows(rows).ToSQL()
+
+	_, err = tx.Exec(sql, params...)
 	if err != nil {
 		tx.Rollback()
 		return 0, err

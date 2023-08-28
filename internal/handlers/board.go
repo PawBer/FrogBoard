@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -35,6 +36,15 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		}{}
 
 		for i := 0; i < len(threads); i++ {
+			files, err := app.FileInfoModel.GetFilesForPost(boardId, threads[i].ID)
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(app.ErrorLog.Writer(), "Error getting files for thread: %s\n", err.Error())
+				fmt.Fprint(w, "Could not get files for thread")
+				return
+			}
+			threads[i].Files = files
+
 			replies, err := app.ReplyModel.GetLatestReplies(threads[i].BoardID, int(threads[i].ID), 5)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -91,9 +101,7 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 		Content string `form:"content"`
 	}{}
 
-	r.ParseForm()
-
-	err := app.FormDecoder.Decode(&formModel, r.Form)
+	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
@@ -101,7 +109,48 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postId, err := app.ThreadModel.Insert(boardId, formModel.Title, formModel.Content)
+	err = app.FormDecoder.Decode(&formModel, r.Form)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
+		fmt.Fprint(w, "Form error")
+		return
+	}
+
+	var fileKeys []string
+
+	files := r.MultipartForm.File["files"]
+
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error opening form files: %s\n", err.Error())
+			fmt.Fprint(w, "Bad files in form")
+			return
+		}
+		defer file.Close()
+
+		buf, err := io.ReadAll(file)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error reading form files: %s\n", err.Error())
+			fmt.Fprint(w, "Bad files in form")
+			return
+		}
+
+		key, err := app.FileInfoModel.InsertFile(fileHeader.Filename, buf)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error uploading file from form: %s\n", err.Error())
+			fmt.Fprint(w, "Bad files in form")
+			return
+		}
+
+		fileKeys = append(fileKeys, key)
+	}
+
+	postId, err := app.ThreadModel.Insert(boardId, formModel.Title, formModel.Content, fileKeys)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(app.ErrorLog.Writer(), "Error inserting thread: %s\n", err.Error())
