@@ -17,3 +17,15 @@ func (app *Application) GetFile(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(file)
 }
+
+func (app *Application) GetFileThumbnail(w http.ResponseWriter, r *http.Request) {
+	hash := chi.URLParam(r, "hash")
+
+	file, err := app.FileStore.GetFileThumbnail(hash)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.Write(file)
+}

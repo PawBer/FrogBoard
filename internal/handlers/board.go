@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,19 +34,31 @@ func (app *Application) GetBoard() http.HandlerFunc {
 			Replies []models.Reply
 		}{}
 
-		for _, v := range threads {
-			replies, err := app.ReplyModel.GetLatestReplies(v.BoardID, int(v.ID), 5)
+		for i := 0; i < len(threads); i++ {
+			replies, err := app.ReplyModel.GetLatestReplies(threads[i].BoardID, int(threads[i].ID), 5)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprintf(app.ErrorLog.Writer(), "Error getting newest replies: %s\n", err.Error())
 				fmt.Fprint(w, "Could not get replies to thread")
 				return
 			}
+
+			for j := 0; j < len(replies); j++ {
+				files, err := app.FileInfoModel.GetFilesForPost(boardId, replies[j].ID)
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+					w.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprintf(app.ErrorLog.Writer(), "Error getting files for reply: %s\n", err.Error())
+					fmt.Fprint(w, "Could not get files for reply")
+					return
+				}
+				replies[j].Files = files
+			}
+
 			threadsTemplate = append(threadsTemplate, struct {
 				Thread  models.Thread
 				Replies []models.Reply
 			}{
-				Thread:  v,
+				Thread:  threads[i],
 				Replies: replies,
 			})
 		}

@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/PawBer/FrogBoard/pkg/filestorage"
 	"github.com/doug-martin/goqu/v9"
@@ -16,6 +17,10 @@ type FileInfo struct {
 type FileInfoModel struct {
 	DbConn    *goqu.Database
 	FileStore filestorage.FileStore
+}
+
+func (fi FileInfo) ContainsImage() bool {
+	return strings.Contains(fi.ContentType, "image")
 }
 
 func (fiModel *FileInfoModel) GetFilesForPost(boardId string, postId uint) ([]FileInfo, error) {

@@ -20,7 +20,7 @@ func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 
 	sql, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
 		"board_id": boardId,
-	}).Order(goqu.I("id").Desc()).Limit(10).ToSQL()
+	}).Order(goqu.I("id").Desc()).Limit(15).ToSQL()
 
 	rows, err := m.DbConn.Query(sql, params...)
 	if err != nil {

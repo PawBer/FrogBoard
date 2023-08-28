@@ -104,5 +104,22 @@
         });
     }
 </script>
+<script>
+    const postImages = document.getElementsByClassName("post-img")
+    for (let post of postImages) {
+        const thumbnail = post.children[0];
+        const image = post.children[1];
+
+        thumbnail.addEventListener("click", (e) => {
+            thumbnail.classList.add("hidden");
+            image.classList.remove("hidden");
+        });
+
+        image.addEventListener("click", (e) => {
+            image.classList.add("hidden");
+            thumbnail.classList.remove("hidden");
+        });
+    }
+</script>
 {{end}}
 {{end}}

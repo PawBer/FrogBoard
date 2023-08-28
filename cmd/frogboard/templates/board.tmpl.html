@@ -21,9 +21,21 @@
                 <time class="pb-2 md:pb-0 md:pr-2" datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
                 <a class="text-blue-500" href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
             </div>
+            <div class="flex space-x-2 mb-3">
             {{range .Files}}
-            <a href="/file/{{.ID}}/">{{.Name}}</a>
+                <div class="flex flex-col items-center">
+                    <a class="text-blue-500 underline mb-1" href="/file/{{.ID}}/">{{.Name}}</a>
+                {{if .ContainsImage}}
+                    <div class="post-img cursor-pointer">
+                        <img src="/file/{{.ID}}/thumb/" width="200" height="200" alt="Thumbnail for post image" />
+                        <img class="hidden" src="/file/{{.ID}}/" alt="Post image" />
+                    </div>
+                {{else}}
+                    <a href="/file/{{.ID}}/"><img width="200" height="200" src="/public/file.png" alt="Thumbnail for post file" /></a>
+                {{end}}     
+                </div>  
             {{end}}
+            </div>
             <p class="mb-2 mx-1">{{.FormatedContent .BoardID}}</p>
         {{end}}
             <div class="flex flex-col justify-start w-full">
@@ -33,9 +45,21 @@
                         <time class="pb-2 md:pb-0 md:pr-2" datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
                         <a class="text-blue-500" href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
                     </div>
+                    <div class="flex space-x-2 mb-3">
             {{range .Files}}
-                    <a href="/file/{{.ID}}/">{{.Name}}</a>
+                        <div class="flex flex-col items-center">
+                            <a class="text-blue-500 underline mb-1" href="/file/{{.ID}}/">{{.Name}}</a>
+                {{if .ContainsImage}}
+                            <div class="post-img cursor-pointer">
+                                <img src="/file/{{.ID}}/thumb/" width="200" height="200" alt="Thumbnail for post image" />
+                                <img class="hidden" src="/file/{{.ID}}/" alt="Post image" />
+                            </div>
+                {{else}}
+                            <a href="/file/{{.ID}}/"><img width="200" height="200" src="/public/file.png" alt="Thumbnail for post file" /></a>
+                {{end}}     
+                        </div>  
             {{end}}
+                    </div>
                     <p class="mb-2 mx-1">{{.FormatedContent .BoardID}}</p>
                 </div>
         {{end}}
