@@ -15,6 +15,10 @@ type ReplyModel struct {
 	DbConn *goqu.Database
 }
 
+func (t Reply) GetType() string {
+	return "reply"
+}
+
 func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, error) {
 	var replies []Reply
 

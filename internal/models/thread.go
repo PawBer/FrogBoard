@@ -15,6 +15,10 @@ type ThreadModel struct {
 	DbConn *goqu.Database
 }
 
+func (t Thread) GetType() string {
+	return "thread"
+}
+
 func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 	var threads []Thread
 
