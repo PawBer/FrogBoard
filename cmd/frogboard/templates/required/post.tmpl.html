@@ -1,19 +1,19 @@
 {{define "post"}}
-<div class="flex flex-col bg-gray-100 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2">
+<div class="flex flex-col bg-gray-200 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2">
     {{if eq .GetType "thread"}}
     <span class="pb-2 md:pb-0 md:pr-2 font-semibold">{{.Title}}</span>
     {{end}}
     <time class="pb-2 md:pb-0 md:pr-2" datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
-    <a class="text-blue-500" href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
+    <a class="text-blue-500 hover:underline" href="/{{.BoardID}}/{{.ID}}/">No. {{.ID}}</a>
 </div>
 <div class="p-2">
     <div class="flex flex-col md:flex-row flex-wrap space-x-2 mb-3">
         {{range .Files}}
         <div class="flex flex-col items-center md:items-start m-1 md:m-0">
-            <a class="inline-block overflow-hidden whitespace-nowrap text-sm overflow-ellipsis hover:overflow-visible text-blue-500 underline mb-1 max-w-[8em]" href="/file/{{.ID}}/">{{.Name}}</a>
+            <a class="inline-block overflow-hidden whitespace-nowrap text-sm overflow-ellipsis hover:overflow-visible hover:whitespace-normal hover:break-words text-blue-500 underline mb-1 max-w-[10em]" href="/file/{{.ID}}/">{{.Name}}</a>
             {{if .ContainsImage}}
             <div class="post-img flex justify-center cursor-pointer">
-                <img class="md:min-w-[200px] max-w-[35vw] md:max-h-[150px]" src="/file/{{.ID}}/thumb/" alt="Thumbnail for post image" />
+                <img class="max-w-[35vw] md:max-h-[200px]" src="/file/{{.ID}}/thumb/" alt="Thumbnail for post image" />
                 <img class="hidden" src="/file/{{.ID}}/" alt="Post image" />
             </div>
             {{else}}

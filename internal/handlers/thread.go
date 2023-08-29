@@ -37,6 +37,12 @@ func (app *Application) GetPost() http.HandlerFunc {
 			http.Redirect(w, r, url, http.StatusPermanentRedirect)
 			return
 		}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting thread: %s\n", err.Error())
+			fmt.Fprint(w, "Could not get thread")
+			return
+		}
 
 		files, err := app.FileInfoModel.GetFilesForPost(boardId, thread.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
