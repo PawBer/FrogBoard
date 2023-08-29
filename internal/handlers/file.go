@@ -11,7 +11,7 @@ func (app *Application) GetFile(w http.ResponseWriter, r *http.Request) {
 
 	file, err := app.FileStore.GetFile(hash)
 	if err != nil {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 
@@ -23,7 +23,7 @@ func (app *Application) GetFileThumbnail(w http.ResponseWriter, r *http.Request)
 
 	file, err := app.FileStore.GetFileThumbnail(hash)
 	if err != nil {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 )
@@ -17,15 +16,17 @@ func (app *Application) GetIndex() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		boards, err := app.BoardModel.GetBoards()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Could not get boards: %s\n", err.Error())
-			fmt.Fprint(w, "Could not get boards")
+			app.serverError(w, err)
 			return
 		}
 		data := map[string]interface{}{
 			"Boards": boards,
 		}
 
-		tmpl.ExecuteTemplate(w, "base", &data)
+		err = tmpl.ExecuteTemplate(w, "base", &data)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 }

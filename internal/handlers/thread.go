@@ -29,7 +29,7 @@ func (app *Application) GetPost() http.HandlerFunc {
 		if err != nil && errors.Is(err, sql.ErrNoRows) {
 			reply, err := app.ReplyModel.Get(boardId, uint(postId))
 			if err != nil && errors.Is(err, sql.ErrNoRows) {
-				http.NotFound(w, r)
+				app.notFound(w)
 				return
 			}
 
@@ -38,35 +38,27 @@ func (app *Application) GetPost() http.HandlerFunc {
 			return
 		}
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting thread: %s\n", err.Error())
-			fmt.Fprint(w, "Could not get thread")
+			app.serverError(w, err)
 			return
 		}
 
 		files, err := app.FileInfoModel.GetFilesForPost(boardId, thread.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting files for thread: %s\n", err.Error())
-			fmt.Fprint(w, "Could not get files for thread")
+			app.serverError(w, err)
 			return
 		}
 		thread.Files = files
 
 		replies, err := app.ReplyModel.GetRepliesToPost(boardId, uint(postId))
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting replies to thread: %s\n", err.Error())
-			fmt.Fprint(w, "Could not get replies")
+			app.serverError(w, err)
 			return
 		}
 
 		for i := 0; i < len(replies); i++ {
 			files, err := app.FileInfoModel.GetFilesForPost(boardId, replies[i].ID)
 			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintf(app.ErrorLog.Writer(), "Error getting files for reply: %s\n", err.Error())
-				fmt.Fprint(w, "Could not get files for reply")
+				app.serverError(w, err)
 				return
 			}
 			replies[i].Files = files
@@ -74,9 +66,7 @@ func (app *Application) GetPost() http.HandlerFunc {
 
 		boards, err := app.BoardModel.GetBoards()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error getting boards: %s\n", err.Error())
-			fmt.Fprint(w, "Could not get boards")
+			app.serverError(w, err)
 			return
 		}
 
@@ -89,7 +79,8 @@ func (app *Application) GetPost() http.HandlerFunc {
 
 		err = tmpl.ExecuteTemplate(w, "base", &templateData)
 		if err != nil {
-			app.ErrorLog.Printf("Error executing template: %s\n", err.Error())
+			app.serverError(w, err)
+			return
 		}
 	}
 }
@@ -105,17 +96,13 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
-		fmt.Fprint(w, "Form error")
+		app.serverError(w, err)
 		return
 	}
 
 	err = app.FormDecoder.Decode(&formModel, r.Form)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(app.ErrorLog.Writer(), "Error parsing form: %s\n", err.Error())
-		fmt.Fprint(w, "Form error")
+		app.serverError(w, err)
 		return
 	}
 
@@ -126,26 +113,20 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error opening form files: %s\n", err.Error())
-			fmt.Fprint(w, "Bad files in form")
+			app.serverError(w, err)
 			return
 		}
 		defer file.Close()
 
 		buf, err := io.ReadAll(file)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error reading form files: %s\n", err.Error())
-			fmt.Fprint(w, "Bad files in form")
+			app.serverError(w, err)
 			return
 		}
 
 		key, err := app.FileInfoModel.InsertFile(fileHeader.Filename, buf)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(app.ErrorLog.Writer(), "Error uploading file from form: %s\n", err.Error())
-			fmt.Fprint(w, "Bad files in form")
+			app.serverError(w, err)
 			return
 		}
 
@@ -154,9 +135,7 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 
 	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content, fileKeys)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(app.ErrorLog.Writer(), "Error inserting reply: %s\n", err.Error())
-		fmt.Fprint(w, "Insert error")
+		app.serverError(w, err)
 		return
 	}
 
