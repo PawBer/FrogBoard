@@ -45,6 +45,7 @@ func main() {
 		ThreadModel:   &models.ThreadModel{DbConn: db},
 		ReplyModel:    &models.ReplyModel{DbConn: db},
 		FileInfoModel: &models.FileInfoModel{DbConn: db, FileStore: fileStore},
+		CitationModel: &models.CitationModel{DbConn: db},
 		Templates:     templates,
 		Public:        public,
 		FormDecoder:   formDecoder,

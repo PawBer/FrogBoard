@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -34,12 +32,11 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		}{}
 
 		for i := 0; i < len(threads); i++ {
-			files, err := app.FileInfoModel.GetFilesForPost(boardId, threads[i].ID)
-			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			err := app.populateFieldsInPost(&threads[i].Post)
+			if err != nil {
 				app.serverError(w, err)
 				return
 			}
-			threads[i].Files = files
 
 			replies, err := app.ReplyModel.GetLatestReplies(threads[i].BoardID, int(threads[i].ID), 5)
 			if err != nil {
@@ -48,12 +45,11 @@ func (app *Application) GetBoard() http.HandlerFunc {
 			}
 
 			for j := 0; j < len(replies); j++ {
-				files, err := app.FileInfoModel.GetFilesForPost(boardId, replies[j].ID)
-				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				err := app.populateFieldsInPost(&replies[j].Post)
+				if err != nil {
 					app.serverError(w, err)
 					return
 				}
-				replies[j].Files = files
 			}
 
 			threadsTemplate = append(threadsTemplate, struct {
@@ -135,6 +131,14 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 		return
+	}
+
+	citations := models.GetCitations(boardId, postId, formModel.Content)
+	for _, citation := range citations {
+		if err := app.CitationModel.InsertCitation(citation.BoardID, citation.PostID, citation.Cites); err != nil {
+			app.serverError(w, err)
+			return
+		}
 	}
 
 	url := fmt.Sprintf("/%s/%d/", boardId, postId)

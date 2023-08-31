@@ -18,6 +18,7 @@ type Application struct {
 	ThreadModel   *models.ThreadModel
 	ReplyModel    *models.ReplyModel
 	FileInfoModel *models.FileInfoModel
+	CitationModel *models.CitationModel
 	Templates     embed.FS
 	Public        embed.FS
 	FormDecoder   *form.Decoder

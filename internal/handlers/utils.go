@@ -1,12 +1,55 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/PawBer/FrogBoard/internal/models"
 )
+
+func (app *Application) populateThreads(threads ...*models.Thread) error {
+	for i := 0; i < len(threads); i++ {
+		err := app.populateFieldsInPost(&threads[i].Post)
+		if err != nil {
+			return err
+		}
+
+		replies, err := app.ReplyModel.GetLatestReplies(threads[i].BoardID, int(threads[i].ID), 5)
+		if err != nil {
+			return err
+		}
+
+		for j := 0; j < len(replies); j++ {
+			err := app.populateFieldsInPost(&replies[j].Post)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (app *Application) populateFieldsInPost(post *models.Post) error {
+	files, err := app.FileInfoModel.GetFilesForPost(post.BoardID, post.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	post.Files = files
+
+	citations, err := app.CitationModel.GetCitationsForPost(post.BoardID, post.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	post.Citations = citations
+
+	return nil
+}
 
 func (app *Application) createTemplate(requiredTemplates []string) (*template.Template, error) {
 	var templateFileNames []string
