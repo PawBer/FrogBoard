@@ -23,6 +23,8 @@ func (app *Application) GetPostJson(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		reply.Content = string(reply.FormatedContent())
+
 		json.NewEncoder(w).Encode(&reply)
 		return
 	}

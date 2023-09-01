@@ -79,8 +79,12 @@ func (fiModel *FileInfoModel) InsertFile(fileName string, file []byte) (string, 
 		return "", err
 	}
 
-	sql, params, _ := fiModel.DbConn.Insert("file_infos").Rows(goqu.Record{"id": key, "file_name": fileName, "content_type": contentType}).ToSQL()
-	fiModel.DbConn.Exec(sql, params...)
+	query, params, _ := fiModel.DbConn.Insert("file_infos").Rows(goqu.Record{"id": key, "file_name": fileName, "content_type": contentType}).ToSQL()
+
+	_, err = fiModel.DbConn.Exec(query+" ON CONFLICT (id) DO NOTHING", params...)
+	if err != nil {
+		return "", err
+	}
 
 	return key, nil
 }

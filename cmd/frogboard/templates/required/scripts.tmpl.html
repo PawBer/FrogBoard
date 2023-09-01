@@ -73,7 +73,7 @@
                             const creationDate = new Date(json.CreatedAt).toLocaleString();
                             timeElem.textContent = creationDate;
                         
-                            postContentElem.textContent = json.Content;
+                            postContentElem.innerHTML = json.Content;
 
                             postDiv.style.top = Math.floor(boundingRect.top) + "px";
                             postDiv.style.left = Math.floor(boundingRect.right + 5) + "px";
@@ -87,6 +87,11 @@
                 return;
             }
 
+            if (post.classList.contains("thread")) {
+                post.classList.remove("bg-white");
+            } else if (post.classList.contains("post")) {
+                post.classList.remove("bg-gray-50")
+            }
             post.children[0].classList.remove("bg-gray-200");
             post.classList.add("bg-red-100");
         });
@@ -99,6 +104,11 @@
                 return;
             }
 
+            if (post.classList.contains("thread")) {
+                post.classList.add("bg-white");
+            } else if (post.classList.contains("post")) {
+                post.classList.add("bg-gray-50")
+            }
             post.children[0].classList.add("bg-gray-200");
             post.classList.remove("bg-red-100");
         });

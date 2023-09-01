@@ -38,14 +38,30 @@ func main() {
 
 	fileStore := filestorage.NewFileSystemStore("files")
 
+	boardModel := &models.BoardModel{DbConn: db}
+	fileInfoModel := &models.FileInfoModel{DbConn: db, FileStore: fileStore}
+	citationModel := &models.CitationModel{DbConn: db}
+
+	replyModel := &models.ReplyModel{
+		DbConn:        db,
+		FileInfoModel: fileInfoModel,
+		CitationModel: citationModel,
+	}
+	threadModel := &models.ThreadModel{
+		DbConn:        db,
+		FileInfoModel: fileInfoModel,
+		CitationModel: citationModel,
+		ReplyModel:    replyModel,
+	}
+
 	app := handlers.Application{
 		InfoLog:       infoLog,
 		ErrorLog:      errorLog,
-		BoardModel:    &models.BoardModel{DbConn: db},
-		ThreadModel:   &models.ThreadModel{DbConn: db},
-		ReplyModel:    &models.ReplyModel{DbConn: db},
-		FileInfoModel: &models.FileInfoModel{DbConn: db, FileStore: fileStore},
-		CitationModel: &models.CitationModel{DbConn: db},
+		BoardModel:    boardModel,
+		ThreadModel:   threadModel,
+		ReplyModel:    replyModel,
+		FileInfoModel: fileInfoModel,
+		CitationModel: citationModel,
 		Templates:     templates,
 		Public:        public,
 		FormDecoder:   formDecoder,

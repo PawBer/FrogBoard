@@ -40,18 +40,3 @@ func (cm *CitationModel) GetCitationsForPost(boardId string, postId uint) ([]Cit
 
 	return citations, nil
 }
-
-func (cm *CitationModel) InsertCitation(boardId string, postId, cites uint) error {
-	sql, params, _ := goqu.Insert("citations").Rows(goqu.Record{
-		"board_id": boardId,
-		"post_id":  postId,
-		"cites":    cites,
-	}).ToSQL()
-
-	_, err := cm.DbConn.Exec(sql, params...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

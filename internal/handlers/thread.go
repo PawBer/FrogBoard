@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -43,24 +42,6 @@ func (app *Application) GetPost() http.HandlerFunc {
 			return
 		}
 
-		if err = app.populateFieldsInPost(&thread.Post); err != nil {
-			app.serverError(w, err)
-			return
-		}
-
-		replies, err := app.ReplyModel.GetRepliesToPost(boardId, uint(postId))
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			app.serverError(w, err)
-			return
-		}
-
-		for i := 0; i < len(replies); i++ {
-			if err = app.populateFieldsInPost(&replies[i].Post); err != nil {
-				app.serverError(w, err)
-				return
-			}
-		}
-
 		boards, err := app.BoardModel.GetBoards()
 		if err != nil {
 			app.serverError(w, err)
@@ -71,7 +52,6 @@ func (app *Application) GetPost() http.HandlerFunc {
 			"BoardID": boardId,
 			"Boards":  boards,
 			"Thread":  thread,
-			"Replies": replies,
 		}
 
 		err = tmpl.ExecuteTemplate(w, "base", &templateData)
@@ -134,14 +114,6 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 		return
-	}
-
-	citations := models.GetCitations(boardId, postId, formModel.Content)
-	for _, citation := range citations {
-		if err := app.CitationModel.InsertCitation(citation.BoardID, citation.PostID, citation.Cites); err != nil {
-			app.serverError(w, err)
-			return
-		}
 	}
 
 	url := fmt.Sprintf("/%s/%d/", boardId, postId)

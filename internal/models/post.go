@@ -2,9 +2,11 @@ package models
 
 import (
 	"fmt"
+	"html"
 	"html/template"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -17,22 +19,40 @@ type Post struct {
 	Citations []Citation
 }
 
-var PostReferenceRegex = regexp.MustCompile(">> ([1-9]+)")
+var PostCitationRegex = regexp.MustCompile("&gt;&gt; ([0-9]+)")
+var GreentextRegex = regexp.MustCompile("&gt; .+")
 
-func (p Post) FormatCreationDate() string {
-	return p.CreatedAt.UTC().Format("2006-01-02T15:04:05-0700")
+func (p Post) FormatCreationDate() template.HTML {
+	return template.HTML(p.CreatedAt.UTC().Format("2006-01-02T15:04:05-0700"))
 }
 
 func (p Post) FormatedContent() template.HTML {
-	replacement := fmt.Sprintf(`<a data-post="$1" class="post-link text-blue-500" href="/%s/$1/">>> $1</a>`, p.BoardID)
+	citationLink := fmt.Sprintf(`<a data-post="$1" class="post-link text-blue-500" href="/%s/$1/">>> $1</a>`, p.BoardID)
+	afterCitations := PostCitationRegex.ReplaceAllString(html.EscapeString(p.Content), citationLink)
 
-	return template.HTML(PostReferenceRegex.ReplaceAllString(p.Content, replacement))
+	var formatedLines []string
+	lines := strings.Split(afterCitations, "\r\n")
+	for _, line := range lines {
+		var newLine string
+
+		if GreentextRegex.MatchString(line) {
+			newLine = `<p class="text-green-600">` + line + `</p>`
+		} else if line == "" {
+			newLine = `<br>`
+		} else {
+			newLine = `<p>` + line + `</p>`
+		}
+
+		formatedLines = append(formatedLines, newLine)
+	}
+
+	return template.HTML(strings.Join(formatedLines, ""))
 }
 
 func GetCitations(boardId string, postId uint, content string) []Citation {
 	var citations []Citation
 
-	matches := PostReferenceRegex.FindAllStringSubmatch(content, -1)
+	matches := PostCitationRegex.FindAllStringSubmatch(html.EscapeString(content), -1)
 
 	for _, match := range matches {
 		citationId, _ := strconv.ParseInt(match[1], 10, 32)

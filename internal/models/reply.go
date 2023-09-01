@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -12,7 +14,9 @@ type Reply struct {
 }
 
 type ReplyModel struct {
-	DbConn *goqu.Database
+	DbConn        *goqu.Database
+	FileInfoModel *FileInfoModel
+	CitationModel *CitationModel
 }
 
 func (t Reply) GetType() string {
@@ -22,12 +26,12 @@ func (t Reply) GetType() string {
 func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, error) {
 	var replies []Reply
 
-	sql, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
 		"board_id":  boardId,
 		"thread_id": threadId,
 	}).Order(goqu.I("id").Asc()).ToSQL()
 
-	rows, err := m.DbConn.Query(sql, params...)
+	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +51,18 @@ func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, e
 			},
 			ThreadID: threadId,
 		}
+
+		files, err := m.FileInfoModel.GetFilesForPost(boardId, reply.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		reply.Files = files
+
+		citations, err := m.CitationModel.GetCitationsForPost(boardId, reply.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		reply.Citations = citations
 
 		replies = append(replies, reply)
 	}
@@ -54,7 +70,7 @@ func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, e
 	return replies, nil
 }
 
-func (m *ReplyModel) GetLatestReplies(boardId string, threadId, limit int) ([]Reply, error) {
+func (m *ReplyModel) GetLatestReplies(boardId string, threadId uint, limit int) ([]Reply, error) {
 	var replies []Reply
 
 	subquery := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
@@ -62,9 +78,9 @@ func (m *ReplyModel) GetLatestReplies(boardId string, threadId, limit int) ([]Re
 		"thread_id": threadId,
 	}).Order(goqu.I("id").Desc()).Limit(5)
 
-	sql, params, _ := m.DbConn.From(subquery).Order(goqu.I("id").Asc()).ToSQL()
+	query, params, _ := m.DbConn.From(subquery).Order(goqu.I("id").Asc()).ToSQL()
 
-	rows, err := m.DbConn.Query(sql, params...)
+	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +100,18 @@ func (m *ReplyModel) GetLatestReplies(boardId string, threadId, limit int) ([]Re
 			},
 			ThreadID: threadId,
 		}
+
+		files, err := m.FileInfoModel.GetFilesForPost(boardId, reply.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		reply.Files = files
+
+		citations, err := m.CitationModel.GetCitationsForPost(boardId, reply.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		reply.Citations = citations
 
 		replies = append(replies, reply)
 	}
@@ -94,17 +122,29 @@ func (m *ReplyModel) GetLatestReplies(boardId string, threadId, limit int) ([]Re
 func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 	var reply Reply
 
-	sql, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
 		"board_id": boardId,
 		"id":       replyId,
 	}).ToSQL()
 
-	row := m.DbConn.QueryRow(sql, params...)
+	row := m.DbConn.QueryRow(query, params...)
 
 	err := row.Scan(&reply.ID, &reply.BoardID, &reply.CreatedAt, &reply.Content, &reply.ThreadID)
 	if err != nil {
 		return nil, err
 	}
+
+	files, err := m.FileInfoModel.GetFilesForPost(boardId, reply.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	reply.Files = files
+
+	citations, err := m.CitationModel.GetCitationsForPost(boardId, reply.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	reply.Citations = citations
 
 	return &reply, nil
 }
@@ -117,18 +157,18 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 		tx.Rollback()
 		return 0, err
 	}
-	sql, params, _ := m.DbConn.From("boards").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("boards").Where(goqu.Ex{
 		"id": boardId,
 	}).Select("id", "last_post_id").ToSQL()
 
-	row := tx.QueryRow(sql, params...)
+	row := tx.QueryRow(query, params...)
 	err = row.Scan(&board.ID, &board.LastPostID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
-	sql, params, _ = m.DbConn.Insert("replies").Rows(goqu.Record{
+	query, params, _ = m.DbConn.Insert("replies").Rows(goqu.Record{
 		"id":         board.LastPostID + 1,
 		"board_id":   boardId,
 		"content":    content,
@@ -137,39 +177,63 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 	}).ToSQL()
 
 	var lastInsertId uint
-	err = tx.QueryRow(sql+" RETURNING id", params...).Scan(&lastInsertId)
+	err = tx.QueryRow(query+" RETURNING id", params...).Scan(&lastInsertId)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
 	}
 
 	if len(files) != 0 {
-		var rows []goqu.Record
+		var records []goqu.Record
 
 		for _, file := range files {
-			row := goqu.Record{
+			record := goqu.Record{
 				"board_id": boardId,
 				"post_id":  lastInsertId,
 				"file_id":  file,
 			}
 
-			rows = append(rows, row)
+			records = append(records, record)
 		}
 
-		sql, params, _ = goqu.Insert("post_files").Rows(rows).ToSQL()
+		query, params, _ := goqu.Insert("post_files").Rows(records).ToSQL()
 
-		_, err = tx.Exec(sql, params...)
+		_, err := tx.Exec(query, params...)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
 		}
 	}
 
-	sql, params, _ = goqu.Update("boards").Set(goqu.Record{
+	citations := GetCitations(boardId, lastInsertId, content)
+
+	if len(citations) != 0 {
+		var records []goqu.Record
+
+		for _, citation := range citations {
+			record := goqu.Record{
+				"board_id": citation.BoardID,
+				"post_id":  citation.PostID,
+				"cites":    citation.Cites,
+			}
+
+			records = append(records, record)
+		}
+
+		query, params, _ := goqu.Insert("citations").Rows(records).ToSQL()
+
+		_, err := tx.Exec(query, params...)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+	}
+
+	query, params, _ = goqu.Update("boards").Set(goqu.Record{
 		"last_post_id": board.LastPostID + 1,
 	}).Where(goqu.Ex{"id": board.ID}).ToSQL()
 
-	_, err = tx.Exec(sql, params...)
+	_, err = tx.Exec(query, params...)
 	if err != nil {
 		tx.Rollback()
 		return 0, err

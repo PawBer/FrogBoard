@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -8,11 +10,15 @@ import (
 
 type Thread struct {
 	Post
-	Title string
+	Title   string
+	Replies []Reply
 }
 
 type ThreadModel struct {
-	DbConn *goqu.Database
+	DbConn        *goqu.Database
+	FileInfoModel *FileInfoModel
+	CitationModel *CitationModel
+	ReplyModel    *ReplyModel
 }
 
 func (t Thread) GetType() string {
@@ -22,11 +28,11 @@ func (t Thread) GetType() string {
 func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 	var threads []Thread
 
-	sql, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
 		"board_id": boardId,
 	}).Order(goqu.I("id").Desc()).Limit(15).ToSQL()
 
-	rows, err := m.DbConn.Query(sql, params...)
+	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +53,24 @@ func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 			Title: title,
 		}
 
+		files, err := m.FileInfoModel.GetFilesForPost(boardId, thread.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		thread.Files = files
+
+		citations, err := m.CitationModel.GetCitationsForPost(boardId, thread.ID)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		thread.Citations = citations
+
+		replies, err := m.ReplyModel.GetLatestReplies(boardId, thread.ID, 5)
+		if err != nil {
+			return nil, err
+		}
+		thread.Replies = replies
+
 		threads = append(threads, thread)
 	}
 
@@ -56,17 +80,35 @@ func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	var thread Thread
 
-	sql, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
 		"board_id": boardId,
 		"id":       threadId,
 	}).ToSQL()
 
-	row := m.DbConn.QueryRow(sql, params...)
+	row := m.DbConn.QueryRow(query, params...)
 
 	err := row.Scan(&thread.ID, &thread.BoardID, &thread.CreatedAt, &thread.Content, &thread.Title)
 	if err != nil {
 		return nil, err
 	}
+
+	files, err := m.FileInfoModel.GetFilesForPost(boardId, thread.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	thread.Files = files
+
+	citations, err := m.CitationModel.GetCitationsForPost(boardId, thread.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	thread.Citations = citations
+
+	replies, err := m.ReplyModel.GetRepliesToPost(boardId, thread.ID)
+	if err != nil {
+		return nil, err
+	}
+	thread.Replies = replies
 
 	return &thread, nil
 }
@@ -106,21 +148,45 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []string) (ui
 	}
 
 	if len(files) != 0 {
-		var rows []goqu.Record
+		var records []goqu.Record
 
 		for _, file := range files {
-			row := goqu.Record{
+			record := goqu.Record{
 				"board_id": boardId,
 				"post_id":  lastInsertId,
 				"file_id":  file,
 			}
 
-			rows = append(rows, row)
+			records = append(records, record)
 		}
 
-		sql, params, _ = goqu.Insert("post_files").Rows(rows).ToSQL()
+		query, params, _ := goqu.Insert("post_files").Rows(records).ToSQL()
 
-		_, err = tx.Exec(sql, params...)
+		_, err := tx.Exec(query, params...)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+	}
+
+	citations := GetCitations(boardId, lastInsertId, content)
+
+	if len(citations) != 0 {
+		var records []goqu.Record
+
+		for _, citation := range citations {
+			record := goqu.Record{
+				"board_id": citation.BoardID,
+				"post_id":  citation.PostID,
+				"cites":    citation.Cites,
+			}
+
+			records = append(records, record)
+		}
+
+		query, params, _ := goqu.Insert("citations").Rows(records).ToSQL()
+
+		_, err := tx.Exec(query, params...)
 		if err != nil {
 			tx.Rollback()
 			return 0, err

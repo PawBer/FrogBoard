@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -26,41 +25,6 @@ func (app *Application) GetBoard() http.HandlerFunc {
 			return
 		}
 
-		threadsTemplate := []struct {
-			Thread  models.Thread
-			Replies []models.Reply
-		}{}
-
-		for i := 0; i < len(threads); i++ {
-			err := app.populateFieldsInPost(&threads[i].Post)
-			if err != nil {
-				app.serverError(w, err)
-				return
-			}
-
-			replies, err := app.ReplyModel.GetLatestReplies(threads[i].BoardID, int(threads[i].ID), 5)
-			if err != nil {
-				app.serverError(w, err)
-				return
-			}
-
-			for j := 0; j < len(replies); j++ {
-				err := app.populateFieldsInPost(&replies[j].Post)
-				if err != nil {
-					app.serverError(w, err)
-					return
-				}
-			}
-
-			threadsTemplate = append(threadsTemplate, struct {
-				Thread  models.Thread
-				Replies []models.Reply
-			}{
-				Thread:  threads[i],
-				Replies: replies,
-			})
-		}
-
 		boards, err := app.BoardModel.GetBoards()
 		if err != nil {
 			app.serverError(w, err)
@@ -70,7 +34,7 @@ func (app *Application) GetBoard() http.HandlerFunc {
 		templateData := map[string]interface{}{
 			"BoardID": boardId,
 			"Boards":  boards,
-			"Threads": threadsTemplate,
+			"Threads": threads,
 		}
 		err = tmpl.ExecuteTemplate(w, "base", &templateData)
 		if err != nil {
@@ -131,14 +95,6 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 		return
-	}
-
-	citations := models.GetCitations(boardId, postId, formModel.Content)
-	for _, citation := range citations {
-		if err := app.CitationModel.InsertCitation(citation.BoardID, citation.PostID, citation.Cites); err != nil {
-			app.serverError(w, err)
-			return
-		}
 	}
 
 	url := fmt.Sprintf("/%s/%d/", boardId, postId)
