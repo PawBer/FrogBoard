@@ -30,3 +30,19 @@ func (app *Application) GetPostJson(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(&thread)
 }
+
+func (app *Application) DeletePost(w http.ResponseWriter, r *http.Request) {
+	boardId := chi.URLParam(r, "boardId")
+	postIdStr := chi.URLParam(r, "postId")
+	postId, _ := strconv.ParseUint(postIdStr, 10, 32)
+
+	if err := app.ThreadModel.Delete(boardId, uint(postId)); err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	if err := app.ReplyModel.Delete(boardId, uint(postId)); err != nil {
+		app.serverError(w, err)
+		return
+	}
+}

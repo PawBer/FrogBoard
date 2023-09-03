@@ -211,22 +211,8 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []string) (ui
 	return lastInsertId, nil
 }
 
-func (m *ThreadModel) Update(thread *Thread) error {
-	sql, params, _ := goqu.Update("threads").Set(goqu.Record{
-		"title":   thread.Title,
-		"content": thread.Content,
-	}).Where(goqu.Ex{"id": thread.ID}).ToSQL()
-
-	_, err := m.DbConn.Exec(sql, params...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *ThreadModel) Delete(id uint) error {
-	sql, params, _ := goqu.Delete("threads").Where(goqu.Ex{"id": id}).ToSQL()
+func (m *ThreadModel) Delete(boardId string, id uint) error {
+	sql, params, _ := goqu.Delete("threads").Where(goqu.Ex{"board_id": boardId, "id": id}).ToSQL()
 
 	_, err := m.DbConn.Exec(sql, params...)
 	if err != nil {

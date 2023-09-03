@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    ports:
+      - 8080:8080
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - file-storage:/var/frogboard/filestorage
+
+  db:
+    image: postgres:latest
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: frogboard
+      POSTGRES_PASSWORD: frogboardpassword
+    ports:
+      - "5432:5432"
+      
+volumes:
+  file-storage:
+  db-data:

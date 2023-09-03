@@ -10,6 +10,7 @@
             <a data-post="{{.PostID}}" class="post-link text-blue-500 underline testing" href="/{{.BoardID}}/{{.PostID}}/">>> {{.PostID}}</a>
         {{end}}
     </div>
+    <a data-board="{{.BoardID}}" data-post="{{.ID}}" class="text-red-600 hover:underline">Delete</a>
 </div>
 <div class="p-2">
     <div class="flex flex-col md:flex-row flex-wrap space-x-2 mb-3">

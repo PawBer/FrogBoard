@@ -247,21 +247,8 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 	return lastInsertId, nil
 }
 
-func (m *ReplyModel) Update(reply *Reply) error {
-	sql, params, _ := goqu.Update("replies").Set(goqu.Record{
-		"content": reply.Content,
-	}).Where(goqu.Ex{"id": reply.ID}).ToSQL()
-
-	_, err := m.DbConn.Exec(sql, params...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *ReplyModel) Delete(id uint) error {
-	sql, params, _ := goqu.Delete("replies").Where(goqu.Ex{"id": id}).ToSQL()
+func (m *ReplyModel) Delete(boardId string, id uint) error {
+	sql, params, _ := goqu.Delete("replies").Where(goqu.Ex{"board_id": boardId, "id": id}).ToSQL()
 
 	_, err := m.DbConn.Exec(sql, params...)
 	if err != nil {

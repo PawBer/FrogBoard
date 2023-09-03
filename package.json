@@ -1,0 +1,11 @@
+{
+  "name": "frogboard",
+  "version": "1.0.0",
+  "scripts": {
+    "bundle": "tailwindcss -i ./style.css -o ./cmd/frogboard/public/style.css"
+  },
+  "private": true,
+  "devDependencies": {
+    "tailwindcss": "^3.3.3"
+  }
+}

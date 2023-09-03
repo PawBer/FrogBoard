@@ -155,4 +155,9 @@ fabric.properties
 
 .DS_Store
 **/.DS_Store
+
 /cmd/frogboard/public/style.css
+
+tmp
+
+node_modules
