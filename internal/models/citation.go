@@ -1,6 +1,8 @@
 package models
 
-import "github.com/doug-martin/goqu/v9"
+import (
+	"github.com/doug-martin/goqu/v9"
+)
 
 type Citation struct {
 	BoardID string
@@ -12,31 +14,40 @@ type CitationModel struct {
 	DbConn *goqu.Database
 }
 
-func (cm *CitationModel) GetCitationsForPost(boardId string, postId uint) ([]Citation, error) {
-	var citations []Citation
+func (cm *CitationModel) GetCitationsForPosts(boardId string, posts ...*Post) error {
+	if len(posts) == 0 {
+		return nil
+	}
 
-	sql, params, _ := goqu.From("citations").Select("board_id", "post_id").Where(goqu.Ex{
+	var ids []uint
+
+	for _, post := range posts {
+		ids = append(ids, post.ID)
+	}
+
+	sql, params, _ := goqu.From("citations").Select("board_id", "post_id", "cites").Where(goqu.Ex{
 		"board_id": boardId,
-		"cites":    postId,
+		"cites":    ids,
 	}).ToSQL()
 
 	rows, err := cm.DbConn.Query(sql, params...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var citation Citation
 	for rows.Next() {
-		err = rows.Scan(&citation.BoardID, &citation.PostID)
+		err = rows.Scan(&citation.BoardID, &citation.PostID, &citation.Cites)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		citations = append(citations, citation)
-	}
-	if len(citations) == 0 {
-		return []Citation{}, nil
+		for _, post := range posts {
+			if citation.Cites == post.ID {
+				post.Citations = append(post.Citations, citation)
+			}
+		}
 	}
 
-	return citations, nil
+	return nil
 }

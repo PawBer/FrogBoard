@@ -23,17 +23,22 @@ func (t Reply) GetType() string {
 	return "reply"
 }
 
-func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, error) {
-	var replies []Reply
+func (m *ReplyModel) GetRepliesToThreads(boardId string, threads ...*Thread) error {
+	var replies []*Reply
+
+	var ids []uint
+	for _, thread := range threads {
+		ids = append(ids, thread.ID)
+	}
 
 	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
 		"board_id":  boardId,
-		"thread_id": threadId,
+		"thread_id": ids,
 	}).Order(goqu.I("id").Asc()).ToSQL()
 
 	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for rows.Next() {
@@ -42,7 +47,7 @@ func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, e
 		var creationTime time.Time
 
 		rows.Scan(&id, &boardId, &creationTime, &content, &threadId)
-		reply := Reply{
+		reply := &Reply{
 			Post: Post{
 				ID:        id,
 				BoardID:   boardId,
@@ -52,37 +57,59 @@ func (m *ReplyModel) GetRepliesToPost(boardId string, threadId uint) ([]Reply, e
 			ThreadID: threadId,
 		}
 
-		files, err := m.FileInfoModel.GetFilesForPost(boardId, reply.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-		reply.Files = files
-
-		citations, err := m.CitationModel.GetCitationsForPost(boardId, reply.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-		reply.Citations = citations
-
 		replies = append(replies, reply)
 	}
+	if len(replies) == 0 {
+		return nil
+	}
 
-	return replies, nil
+	var posts []*Post
+	for _, thread := range replies {
+		posts = append(posts, &thread.Post)
+	}
+
+	err = m.FileInfoModel.GetFilesForPosts(boardId, posts...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	err = m.CitationModel.GetCitationsForPosts(boardId, posts...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	for _, thread := range threads {
+		for _, reply := range replies {
+			if reply.ThreadID == thread.ID {
+				thread.Replies = append(thread.Replies, reply)
+			}
+		}
+	}
+
+	return nil
 }
 
-func (m *ReplyModel) GetLatestReplies(boardId string, threadId uint, limit int) ([]Reply, error) {
-	var replies []Reply
+func (m *ReplyModel) GetLatestReplies(boardId string, limit int, threads ...*Thread) error {
+	var replies []*Reply
 
-	subquery := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
-		"board_id":  boardId,
-		"thread_id": threadId,
-	}).Order(goqu.I("id").Desc()).Limit(5)
+	var ids []uint
+	for _, thread := range threads {
+		ids = append(ids, thread.ID)
+	}
 
-	query, params, _ := m.DbConn.From(subquery).Order(goqu.I("id").Asc()).ToSQL()
+	subquery := m.DbConn.From("replies").Select("*",
+		goqu.ROW_NUMBER().Over(goqu.W().PartitionBy("thread_id").OrderBy(goqu.I("id").Desc())).As("ordering"),
+	).Where(
+		goqu.Ex{"board_id": boardId, "thread_id": ids},
+	)
+
+	query, params, _ := m.DbConn.From(subquery).Select("id", "board_id", "created_at", "content", "thread_id").Where(
+		goqu.Ex{"ordering": goqu.Op{"lte": limit}},
+	).Order(goqu.I("ordering").Desc()).ToSQL()
 
 	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for rows.Next() {
@@ -91,7 +118,7 @@ func (m *ReplyModel) GetLatestReplies(boardId string, threadId uint, limit int) 
 		var creationTime time.Time
 
 		rows.Scan(&id, &boardId, &creationTime, &content, &threadId)
-		reply := Reply{
+		reply := &Reply{
 			Post: Post{
 				ID:        id,
 				BoardID:   boardId,
@@ -101,26 +128,37 @@ func (m *ReplyModel) GetLatestReplies(boardId string, threadId uint, limit int) 
 			ThreadID: threadId,
 		}
 
-		files, err := m.FileInfoModel.GetFilesForPost(boardId, reply.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-		reply.Files = files
-
-		citations, err := m.CitationModel.GetCitationsForPost(boardId, reply.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-		reply.Citations = citations
-
 		replies = append(replies, reply)
 	}
 
-	return replies, nil
+	var posts []*Post
+	for _, reply := range replies {
+		posts = append(posts, &reply.Post)
+	}
+
+	err = m.FileInfoModel.GetFilesForPosts(boardId, posts...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	err = m.CitationModel.GetCitationsForPosts(boardId, posts...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	for _, thread := range threads {
+		for _, reply := range replies {
+			if reply.ThreadID == thread.ID {
+				thread.Replies = append(thread.Replies, reply)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
-	var reply Reply
+	reply := Reply{}
 
 	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
 		"board_id": boardId,
@@ -134,17 +172,15 @@ func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 		return nil, err
 	}
 
-	files, err := m.FileInfoModel.GetFilesForPost(boardId, reply.ID)
+	err = m.FileInfoModel.GetFilesForPosts(boardId, &reply.Post)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	reply.Files = files
 
-	citations, err := m.CitationModel.GetCitationsForPost(boardId, reply.ID)
+	err = m.CitationModel.GetCitationsForPosts(boardId, &reply.Post)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	reply.Citations = citations
 
 	return &reply, nil
 }

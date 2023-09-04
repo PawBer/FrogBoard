@@ -4,7 +4,7 @@
     <span class="font-semibold">{{.Title}}</span>
     {{end}}
     <time datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
-    <a class="text-blue-500 hover:underline" href="/{{.BoardID}}/{{.ID}}/">No. {{.ID}}</a>
+    <a class="text-blue-500 hover:underline" href="/{{.BoardID}}/{{.ID}}/#p{{.ID}}">No. {{.ID}}</a>
     <div class="flex space-x-2">
         {{range .Citations}}
             <a data-post="{{.PostID}}" class="post-link text-blue-500 underline testing" href="/{{.BoardID}}/{{.PostID}}/">>> {{.PostID}}</a>

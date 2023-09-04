@@ -116,6 +116,6 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := fmt.Sprintf("/%s/%d/", boardId, postId)
+	url := fmt.Sprintf("/%s/%d/#p%d", boardId, postId, postId)
 	http.Redirect(w, r, url, http.StatusMovedPermanently)
 }

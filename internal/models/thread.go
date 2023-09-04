@@ -11,7 +11,7 @@ import (
 type Thread struct {
 	Post
 	Title   string
-	Replies []Reply
+	Replies []*Reply
 }
 
 type ThreadModel struct {
@@ -25,8 +25,8 @@ func (t Thread) GetType() string {
 	return "thread"
 }
 
-func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
-	var threads []Thread
+func (m *ThreadModel) GetLatest(boardId string) ([]*Thread, error) {
+	var threads []*Thread
 
 	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
 		"board_id": boardId,
@@ -43,7 +43,7 @@ func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 		var creationTime time.Time
 
 		rows.Scan(&id, &boardId, &creationTime, &content, &title)
-		thread := Thread{
+		thread := &Thread{
 			Post: Post{
 				ID:        id,
 				BoardID:   boardId,
@@ -53,25 +53,27 @@ func (m *ThreadModel) GetLatest(boardId string) ([]Thread, error) {
 			Title: title,
 		}
 
-		files, err := m.FileInfoModel.GetFilesForPost(boardId, thread.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-		thread.Files = files
-
-		citations, err := m.CitationModel.GetCitationsForPost(boardId, thread.ID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-		thread.Citations = citations
-
-		replies, err := m.ReplyModel.GetLatestReplies(boardId, thread.ID, 5)
-		if err != nil {
-			return nil, err
-		}
-		thread.Replies = replies
-
 		threads = append(threads, thread)
+	}
+
+	var posts []*Post
+	for _, thread := range threads {
+		posts = append(posts, &thread.Post)
+	}
+
+	err = m.ReplyModel.GetLatestReplies(boardId, 5, threads...)
+	if err != nil {
+		return nil, err
+	}
+
+	err = m.FileInfoModel.GetFilesForPosts(boardId, posts...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	err = m.CitationModel.GetCitationsForPosts(boardId, posts...)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
 	}
 
 	return threads, nil
@@ -92,23 +94,20 @@ func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 		return nil, err
 	}
 
-	files, err := m.FileInfoModel.GetFilesForPost(boardId, thread.ID)
+	err = m.FileInfoModel.GetFilesForPosts(boardId, &thread.Post)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	thread.Files = files
 
-	citations, err := m.CitationModel.GetCitationsForPost(boardId, thread.ID)
+	err = m.CitationModel.GetCitationsForPosts(boardId, &thread.Post)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	thread.Citations = citations
 
-	replies, err := m.ReplyModel.GetRepliesToPost(boardId, thread.ID)
+	err = m.ReplyModel.GetRepliesToThreads(boardId, &thread)
 	if err != nil {
 		return nil, err
 	}
-	thread.Replies = replies
 
 	return &thread, nil
 }
