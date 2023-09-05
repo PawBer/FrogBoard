@@ -30,7 +30,7 @@ func (m *ThreadModel) GetLatest(boardId string) ([]*Thread, error) {
 
 	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
 		"board_id": boardId,
-	}).Order(goqu.I("id").Desc()).Limit(15).ToSQL()
+	}).Order(goqu.I("last_bump").Desc()).Limit(15).ToSQL()
 
 	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
@@ -137,6 +137,8 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []string) (ui
 		"content":    content,
 		"created_at": goqu.V("NOW()"),
 		"title":      title,
+		"last_bump":  goqu.V("NOW()"),
+		"post_count": 0,
 	}).ToSQL()
 
 	var lastInsertId uint

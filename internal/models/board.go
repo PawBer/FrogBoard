@@ -6,6 +6,7 @@ type Board struct {
 	ID         string
 	FullName   string
 	LastPostID uint
+	BumpLimit  uint
 }
 
 type BoardModel struct {

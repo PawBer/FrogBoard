@@ -195,10 +195,10 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 	}
 	query, params, _ := m.DbConn.From("boards").Where(goqu.Ex{
 		"id": boardId,
-	}).Select("id", "last_post_id").ToSQL()
+	}).Select("id", "last_post_id", "bump_limit").ToSQL()
 
 	row := tx.QueryRow(query, params...)
-	err = row.Scan(&board.ID, &board.LastPostID)
+	err = row.Scan(&board.ID, &board.LastPostID, &board.BumpLimit)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -268,6 +268,43 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 	query, params, _ = goqu.Update("boards").Set(goqu.Record{
 		"last_post_id": board.LastPostID + 1,
 	}).Where(goqu.Ex{"id": board.ID}).ToSQL()
+
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	query, params, _ = goqu.From("threads").Select("post_count").Where(goqu.Ex{
+		"board_id": boardId,
+		"id":       threadId,
+	}).ToSQL()
+
+	row = tx.QueryRow(query, params...)
+
+	var postCount uint
+	err = row.Scan(&postCount)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	var record goqu.Record
+	if board.BumpLimit > postCount {
+		record = goqu.Record{
+			"last_bump":  goqu.V("NOW()"),
+			"post_count": postCount + 1,
+		}
+	} else {
+		record = goqu.Record{
+			"post_count": postCount + 1,
+		}
+	}
+
+	query, params, _ = goqu.Update("threads").Set(record).Where(goqu.Ex{
+		"board_id": boardId,
+		"id":       threadId,
+	}).ToSQL()
 
 	_, err = tx.Exec(query, params...)
 	if err != nil {
