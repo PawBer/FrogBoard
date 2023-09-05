@@ -25,17 +25,15 @@ func (app *Application) GetBoard() http.HandlerFunc {
 			return
 		}
 
-		boards, err := app.BoardModel.GetBoards()
+		templateData, err := app.getTemplateData()
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		templateData := map[string]interface{}{
-			"BoardID": boardId,
-			"Boards":  boards,
-			"Threads": threads,
-		}
+		templateData["BoardID"] = boardId
+		templateData["Threads"] = threads
+
 		err = tmpl.ExecuteTemplate(w, "base", &templateData)
 		if err != nil {
 			app.serverError(w, err)
@@ -98,5 +96,5 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url := fmt.Sprintf("/%s/%d/#p%d", boardId, postId, postId)
-	http.Redirect(w, r, url, http.StatusMovedPermanently)
+	http.Redirect(w, r, url, http.StatusFound)
 }

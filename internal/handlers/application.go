@@ -38,6 +38,8 @@ func (app *Application) GetRouter() http.Handler {
 	router.Post("/{boardId}/", app.PostBoard)
 	router.Get("/{boardId}/{postId}/", app.GetPost())
 	router.Post("/{boardId}/{postId}/", app.PostThread)
+	router.Get("/{boardId}/{postId}/delete/", app.GetDelete())
+	router.Post("/{boardId}/{postId}/delete/", app.PostDelete)
 	router.Get("/file/{hash}/", app.GetFile)
 	router.Get("/file/{hash}/thumb/", app.GetFileThumbnail)
 	router.Get("/api/post/{boardId}/{postId}/", app.GetPostJson)

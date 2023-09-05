@@ -8,6 +8,19 @@ import (
 	"runtime/debug"
 )
 
+func (app *Application) getTemplateData() (map[string]interface{}, error) {
+	boards, err := app.BoardModel.GetBoards()
+	if err != nil {
+		return nil, err
+	}
+
+	templateData := map[string]interface{}{
+		"Boards": boards,
+	}
+
+	return templateData, nil
+}
+
 func (app *Application) createTemplate(requiredTemplates []string) (*template.Template, error) {
 	var templateFileNames []string
 

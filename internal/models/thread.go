@@ -211,12 +211,91 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []string) (ui
 }
 
 func (m *ThreadModel) Delete(boardId string, id uint) error {
-	sql, params, _ := goqu.Delete("threads").Where(goqu.Ex{"board_id": boardId, "id": id}).ToSQL()
+	query, params, _ := goqu.Delete("threads").Where(goqu.Ex{"board_id": boardId, "id": id}).ToSQL()
 
-	_, err := m.DbConn.Exec(sql, params...)
+	tx, err := m.DbConn.Begin()
 	if err != nil {
 		return err
 	}
+
+	result, err := tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return sql.ErrNoRows
+	}
+
+	query, params, _ = goqu.From("replies").Select("id").Where(goqu.Ex{
+		"board_id":  boardId,
+		"thread_id": id,
+	}).ToSQL()
+
+	rows, err := tx.Query(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	var ids []uint
+	var replyId uint
+
+	for rows.Next() {
+		err := rows.Scan(&replyId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		ids = append(ids, replyId)
+	}
+
+	if len(ids) == 0 {
+		tx.Commit()
+		return nil
+	}
+
+	query, params, _ = goqu.Delete("replies").Where(goqu.Ex{
+		"board_id":  boardId,
+		"thread_id": id,
+	}).ToSQL()
+
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query, params, _ = goqu.Delete("post_files").Where(goqu.Ex{
+		"board_id": boardId,
+		"post_id":  ids,
+	}).ToSQL()
+
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query, params, _ = goqu.Delete("citations").Where(goqu.Ex{
+		"board_id": boardId,
+		"post_id":  ids,
+	}).ToSQL()
+
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
 
 	return nil
 }
