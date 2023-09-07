@@ -1,33 +1,44 @@
 {{define "post"}}
 <div class="flex flex-col bg-gray-200 text-xs w-full items-start md:flex-row md:text-base p-2 mb-2 space-y-2 md:space-y-0 md:space-x-2">
-    {{if eq .GetType "thread"}}
-    <span class="font-semibold">{{.Title}}</span>
-    {{end}}
+    <span>Anonymous</span>
     <time datetime="{{.FormatCreationDate}}">{{.CreatedAt}}</time>
     <a class="text-blue-500 hover:underline" href="/{{.BoardID}}/{{.ID}}/#p{{.ID}}">No. {{.ID}}</a>
+    {{with .Citations}}
     <div class="flex space-x-2">
-        {{range .Citations}}
+        {{range .}}
             <a data-post="{{.PostID}}" class="post-link text-blue-500 underline testing" href="/{{.BoardID}}/{{.PostID}}/">>> {{.PostID}}</a>
         {{end}}
     </div>
-    <a data-board="{{.BoardID}}" data-post="{{.ID}}" href="/{{.BoardID}}/{{.ID}}/delete/" class="text-red-600 hover:underline">Delete</a>
+    {{end}}
+    <div class="hidden md:block md:flex-1"></div>
+    <a data-board="{{.BoardID}}" data-post="{{.ID}}" href="/{{.BoardID}}/{{.ID}}/delete/" class="text-red-600 hover:underline md:ml-auto">Delete</a>
 </div>
-<div class="p-2">
-    <div class="flex flex-col md:flex-row flex-wrap space-x-2 mb-3">
-        {{range .Files}}
-        <div class="flex flex-col items-center md:items-start m-1 md:m-0">
-            <a class="inline-block overflow-hidden whitespace-nowrap text-sm overflow-ellipsis hover:overflow-visible hover:whitespace-normal hover:break-words text-blue-500 underline mb-1 max-w-[10em]" href="/file/{{.ID}}/">{{.Name}}</a>
+{{if eq .FileCount 0}}
+{{else if eq .FileCount 1}}
+    {{with index .Files 0}}
+    <a class="text-blue-500 text-sm underline mb-2 flex justify-center md:block md:w-fit md:ml-3" href="/file/{{.ID}}/">{{.Name}}</a>
+        <div class="flex flex-col items-center md:items-start m-1 md:m-0 md:mr-4 md:ml-3 md:mb-3 md:w-fit md:float-left">
             {{if .ContainsImage}}
             <div class="post-img flex justify-center cursor-pointer">
-                <img class="max-w-[35vw] md:max-h-[200px]" src="/file/{{.ID}}/thumb/" alt="Thumbnail for post image" />
+                <img class="max-w-[35vw] md:max-h-[100px] xl:max-h-[150px] 2xl:max-h-[200px]" src="/file/{{.ID}}/thumb/" alt="Thumbnail for post image" />
                 <img class="hidden" src="/file/{{.ID}}/" alt="Post image" />
             </div>
             {{else}}
-            <a class="block w-1/4 md:w-[150px] md:h-[150px]" href="/file/{{.ID}}/"><img src="/public/file.png" alt="Thumbnail for post file" /></a>
+            <a class="block w-1/4 md:w-[150px] md:h-[100px]" href="/file/{{.ID}}/"><img src="/public/file.png" alt="Thumbnail for post file" /></a>
             {{end}}
         </div>
         {{end}}
+{{else}}
+    {{template "filegallery" .Files}}
+{{end}}
+    {{if eq .FileCount 0}}
+    <div class="md:float-left md:mr-8 ml-3 mr-3 mb-3">
+    {{else}}
+    <div class="mr-3 ml-3 mb-3 md:min-w-[30em] xl:min-w-[35em]">
+    {{end}}
+        {{if eq .GetType "thread"}}
+        <span class="block font-semibold text-xl mb-1">{{.Title}}</span>
+        {{end}}
+        <div class="block text-sm xl:text-base whitespace-break-spaces">{{.FormatedContent}}</div>
     </div>
-    <p class="mb-2 mx-2 whitespace-pre-wrap">{{.FormatedContent}}</p>
-</div>   
 {{end}}

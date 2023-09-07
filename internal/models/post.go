@@ -26,6 +26,10 @@ func (p Post) FormatCreationDate() template.HTML {
 	return template.HTML(p.CreatedAt.UTC().Format("2006-01-02T15:04:05-0700"))
 }
 
+func (p Post) FileCount() int {
+	return len(p.Files)
+}
+
 func (p Post) FormatedContent() template.HTML {
 	citationLink := fmt.Sprintf(`<a data-post="$1" class="post-link text-blue-500" href="/%s/$1/">>> $1</a>`, p.BoardID)
 	afterCitations := PostCitationRegex.ReplaceAllString(html.EscapeString(p.Content), citationLink)
@@ -36,11 +40,11 @@ func (p Post) FormatedContent() template.HTML {
 		var newLine string
 
 		if GreentextRegex.MatchString(line) {
-			newLine = `<p class="text-green-600">` + line + `</p>`
+			newLine = `<span class="text-green-600">` + line + `</span><br>`
 		} else if line == "" {
-			newLine = `<br>`
+			newLine = `<br><br>`
 		} else {
-			newLine = `<p>` + line + `</p>`
+			newLine = line + `<br>`
 		}
 
 		formatedLines = append(formatedLines, newLine)

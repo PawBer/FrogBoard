@@ -1,0 +1,17 @@
+{{define "filegallery"}}
+<div class="flex flex-col md:flex-row flex-wrap space-x-2 mb-3 md:mr-3 md:ml-3">
+    {{range .}}
+    <div class="flex flex-col items-center md:items-start m-1 md:m-0 md:w-fit">
+        <a class="inline-block overflow-hidden whitespace-nowrap text-sm overflow-ellipsis hover:overflow-visible hover:whitespace-normal hover:break-words text-blue-500 underline mb-1 max-w-[10em]" href="/file/{{.ID}}/">{{.Name}}</a>
+        {{if .ContainsImage}}
+        <div class="post-img flex justify-center cursor-pointer">
+            <img class="max-w-[35vw] md:max-h-[100px] xl:max-h-[150px]" src="/file/{{.ID}}/thumb/" alt="Thumbnail for post image" />
+            <img class="hidden" src="/file/{{.ID}}/" alt="Post image" />
+        </div>
+        {{else}}
+        <a class="block w-1/4 md:w-[150px] md:h-[150px]" href="/file/{{.ID}}/"><img src="/public/file.png" alt="Thumbnail for post file" /></a>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}
