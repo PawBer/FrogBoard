@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -65,20 +66,87 @@ func (fiModel *FileInfoModel) GetFilesForPosts(boardId string, posts ...*Post) e
 	return nil
 }
 
-func (fiModel *FileInfoModel) InsertFile(fileName string, file []byte) (string, error) {
+func (fiModel *FileInfoModel) InsertFile(fileName string, file []byte) (FileInfo, error) {
 	contentType := http.DetectContentType(file)
 
 	key, err := fiModel.FileStore.AddFile(file)
 	if err != nil {
-		return "", err
+		return FileInfo{}, err
 	}
 
-	query, params, _ := fiModel.DbConn.Insert("file_infos").Rows(goqu.Record{"id": key, "file_name": fileName, "content_type": contentType}).ToSQL()
+	query, params, _ := fiModel.DbConn.Insert("file_infos").Rows(goqu.Record{"id": key, "content_type": contentType}).ToSQL()
 
 	_, err = fiModel.DbConn.Exec(query+" ON CONFLICT (id) DO NOTHING", params...)
 	if err != nil {
-		return "", err
+		return FileInfo{}, err
 	}
 
-	return key, nil
+	return FileInfo{ID: key, Name: fileName, ContentType: contentType}, nil
+}
+
+func (fiModel *FileInfoModel) DeleteOrphanedFiles() error {
+	query, params, _ := goqu.From("post_files").Select("file_id").ToSQL()
+
+	tx, err := fiModel.DbConn.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	rows, err := fiModel.DbConn.Query(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	fileIdsMap := map[string]bool{}
+
+	var fileId string
+	for rows.Next() {
+		err := rows.Scan(&fileId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		fileIdsMap[fileId] = true
+	}
+
+	var fileIds []string
+	for id := range fileIdsMap {
+		fileIds = append(fileIds, id)
+	}
+
+	query, params, _ = goqu.Delete("file_infos").Where(goqu.Ex{
+		"id": goqu.Op{"notIn": fileIds},
+	}).ToSQL()
+
+	rows, err = fiModel.DbConn.Query(query+" RETURNING id", params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	var deletedFileIds []string
+
+	for rows.Next() {
+		err := rows.Scan(&fileId)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		deletedFileIds = append(deletedFileIds, fileId)
+	}
+
+	fmt.Printf("Deleted files: %v\n", deletedFileIds)
+
+	err = fiModel.FileStore.DeleteFiles(deletedFileIds...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
 }

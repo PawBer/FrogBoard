@@ -185,7 +185,7 @@ func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 	return &reply, nil
 }
 
-func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files []string) (uint, error) {
+func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files []FileInfo) (uint, error) {
 	var board Board
 
 	tx, err := m.DbConn.Begin()
@@ -224,9 +224,10 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 
 		for _, file := range files {
 			record := goqu.Record{
-				"board_id": boardId,
-				"post_id":  lastInsertId,
-				"file_id":  file,
+				"board_id":  boardId,
+				"post_id":   lastInsertId,
+				"file_id":   file.ID,
+				"file_name": file.Name,
 			}
 
 			records = append(records, record)

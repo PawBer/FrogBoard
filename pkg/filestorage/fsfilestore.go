@@ -112,16 +112,30 @@ func (fs *FSFileStore) GetFileThumbnail(key string) ([]byte, error) {
 	return file, nil
 }
 
-func (fs *FSFileStore) DeleteFile(key string) error {
-	directoryPath := fmt.Sprintf("%s/%s", fs.directoryPath, key[0:2])
-	if _, err := os.Stat(directoryPath); errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
+func (fs *FSFileStore) DeleteFiles(keys ...string) error {
+	for _, key := range keys {
+		directoryPath := fmt.Sprintf("%s/%s", fs.directoryPath, key[0:2])
+		if _, err := os.Stat(directoryPath); errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
 
-	filePath := fmt.Sprintf("%s/%s/%s", fs.directoryPath, key[0:2], key[2:])
-	_, err := os.Stat(filePath)
-	if err == nil {
-		if err := os.Remove(filePath); err != nil {
+		filePath := fmt.Sprintf("%s/%s/%s", fs.directoryPath, key[0:2], key[2:])
+		_, err := os.Stat(filePath)
+		if err == nil {
+			if err := os.Remove(filePath); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+
+		filePath = fmt.Sprintf("%s/%s/%s.thumb", fs.directoryPath, key[0:2], key[2:])
+		_, err = os.Stat(filePath)
+		if err == nil {
+			if err := os.Remove(filePath); err != nil {
+				return err
+			}
+		} else {
 			return err
 		}
 	}

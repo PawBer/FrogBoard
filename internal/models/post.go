@@ -20,7 +20,7 @@ type Post struct {
 }
 
 var PostCitationRegex = regexp.MustCompile("&gt;&gt; ([0-9]+)")
-var GreentextRegex = regexp.MustCompile("&gt; .+")
+var GreentextRegex = regexp.MustCompile("&gt;.+")
 
 func (p Post) FormatCreationDate() template.HTML {
 	return template.HTML(p.CreatedAt.UTC().Format("2006-01-02T15:04:05-0700"))

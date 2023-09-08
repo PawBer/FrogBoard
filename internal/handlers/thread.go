@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -80,7 +81,7 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var fileKeys []string
+	var fileInfos []models.FileInfo
 
 	files := r.MultipartForm.File["files"]
 
@@ -98,16 +99,16 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		key, err := app.FileInfoModel.InsertFile(fileHeader.Filename, buf)
+		fileInfo, err := app.FileInfoModel.InsertFile(fileHeader.Filename, buf)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		fileKeys = append(fileKeys, key)
+		fileInfos = append(fileInfos, fileInfo)
 	}
 
-	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content, fileKeys)
+	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content, fileInfos)
 	if err != nil {
 		app.serverError(w, err)
 		return

@@ -112,7 +112,7 @@ func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	return &thread, nil
 }
 
-func (m *ThreadModel) Insert(boardId, title, content string, files []string) (uint, error) {
+func (m *ThreadModel) Insert(boardId, title, content string, files []FileInfo) (uint, error) {
 	var board Board
 
 	tx, err := m.DbConn.Begin()
@@ -153,9 +153,10 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []string) (ui
 
 		for _, file := range files {
 			record := goqu.Record{
-				"board_id": boardId,
-				"post_id":  lastInsertId,
-				"file_id":  file,
+				"board_id":  boardId,
+				"post_id":   lastInsertId,
+				"file_id":   file.ID,
+				"file_name": file.Name,
 			}
 
 			records = append(records, record)
@@ -247,8 +248,9 @@ func (m *ThreadModel) Delete(boardId string, id uint) error {
 	}
 
 	var ids []uint
-	var replyId uint
+	ids = append(ids, id)
 
+	var replyId uint
 	for rows.Next() {
 		err := rows.Scan(&replyId)
 		if err != nil {

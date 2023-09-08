@@ -65,10 +65,23 @@ func (app *Application) PostDelete(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
+
+		err = app.FileInfoModel.DeleteOrphanedFiles()
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
 		url := fmt.Sprintf("/%s/", boardId)
 		http.Redirect(w, r, url, http.StatusFound)
 		return
 	}
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	err = app.FileInfoModel.DeleteOrphanedFiles()
 	if err != nil {
 		app.serverError(w, err)
 		return
