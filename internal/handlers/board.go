@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/PawBer/FrogBoard/internal/models"
+	"github.com/dchest/captcha"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -26,7 +27,9 @@ func (app *Application) GetBoard() http.HandlerFunc {
 			return
 		}
 
-		templateData, err := app.getTemplateData()
+		captchaId := captcha.New()
+
+		templateData, err := app.getTemplateData(r)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -34,6 +37,12 @@ func (app *Application) GetBoard() http.HandlerFunc {
 
 		templateData["BoardID"] = boardId
 		templateData["Threads"] = threads
+		templateData["CaptchaID"] = captchaId
+
+		if app.Sessions.Exists(r.Context(), "form-title") && app.Sessions.Exists(r.Context(), "form-content") {
+			templateData["FormTitle"] = app.Sessions.PopString(r.Context(), "form-title")
+			templateData["FormContent"] = app.Sessions.PopString(r.Context(), "form-content")
+		}
 
 		err = tmpl.ExecuteTemplate(w, "base", &templateData)
 		if err != nil {
@@ -47,8 +56,10 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 	boardId := chi.URLParam(r, "boardId")
 
 	formModel := struct {
-		Title   string `form:"title"`
-		Content string `form:"content"`
+		Title       string `form:"title"`
+		Content     string `form:"content"`
+		CaptchaId   string `form:"captcha-id"`
+		CaptchaCode string `form:"captcha-code"`
 	}{}
 
 	err := r.ParseMultipartForm(32 << 20)
@@ -60,6 +71,17 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 	err = app.FormDecoder.Decode(&formModel, r.Form)
 	if err != nil {
 		app.serverError(w, err)
+		return
+	}
+
+	if !captcha.VerifyString(formModel.CaptchaId, formModel.CaptchaCode) {
+		app.Sessions.Put(r.Context(), "flash", "Failed captcha authentication")
+
+		app.Sessions.Put(r.Context(), "form-title", formModel.Title)
+		app.Sessions.Put(r.Context(), "form-content", formModel.Content)
+
+		url := fmt.Sprintf("/%s/", boardId)
+		http.Redirect(w, r, url, http.StatusSeeOther)
 		return
 	}
 

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/public/style.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <title>FrogBoard</title>
 </head>
 <body class="flex flex-col min-h-[100vh] bg-green-200">
@@ -15,7 +16,8 @@
     <div class="bg-green-600 flex items-center justify-center w-full mt-auto p-1">
         <p class="text-white">Powered by</p>&nbsp;<a class="text-white underline" href="https://github.com/PawBer/FrogBoard">FrogBoard</a>
     </div>
-    {{template "scripts" .}}
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    {{template "scripts" .}}  
 </body>
 </html>
 {{end}}

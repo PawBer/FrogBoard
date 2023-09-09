@@ -24,7 +24,7 @@ func (app *Application) GetDelete() http.HandlerFunc {
 		postIdStr := chi.URLParam(r, "postId")
 		postId, _ := strconv.ParseUint(postIdStr, 10, 32)
 
-		templateData, err := app.getTemplateData()
+		templateData, err := app.getTemplateData(r)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -58,7 +58,7 @@ func (app *Application) PostDelete(w http.ResponseWriter, r *http.Request) {
 	postIdStr := chi.URLParam(r, "postId")
 	postId, _ := strconv.ParseUint(postIdStr, 10, 32)
 
-	err := app.ReplyModel.Delete(boardId, uint(postId))
+	threadId, err := app.ReplyModel.Delete(boardId, uint(postId))
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		err := app.ThreadModel.Delete(boardId, uint(postId))
 		if err != nil {
@@ -87,6 +87,6 @@ func (app *Application) PostDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := fmt.Sprintf("/%s/", boardId)
+	url := fmt.Sprintf("/%s/%d/", boardId, threadId)
 	http.Redirect(w, r, url, http.StatusFound)
 }

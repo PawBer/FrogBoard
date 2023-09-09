@@ -22,7 +22,14 @@ services:
       POSTGRES_PASSWORD: frogboardpassword
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - redis-data:/data
       
 volumes:
   file-storage:
   db-data:
+  redis-data:

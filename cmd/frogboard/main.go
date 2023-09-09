@@ -11,12 +11,15 @@ import (
 	"github.com/PawBer/FrogBoard/internal/handlers"
 	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/PawBer/FrogBoard/pkg/filestorage"
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/go-playground/form"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/gomodule/redigo/redis"
 	_ "github.com/lib/pq"
 )
 
@@ -56,6 +59,16 @@ func main() {
 
 	fileStore := filestorage.NewFileSystemStore("/var/frogboard/filestorage")
 
+	pool := &redis.Pool{
+		MaxIdle: 10,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", "redis:6379")
+		},
+	}
+
+	sessionStore := scs.New()
+	sessionStore.Store = redisstore.New(pool)
+
 	boardModel := &models.BoardModel{DbConn: db}
 	fileInfoModel := &models.FileInfoModel{DbConn: db, FileStore: fileStore}
 	citationModel := &models.CitationModel{DbConn: db}
@@ -84,6 +97,7 @@ func main() {
 		Public:        public,
 		FormDecoder:   formDecoder,
 		FileStore:     fileStore,
+		Sessions:      sessionStore,
 	}
 
 	log.Printf("Starting server at :8080")

@@ -7,6 +7,8 @@ import (
 
 	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/PawBer/FrogBoard/pkg/filestorage"
+	"github.com/alexedwards/scs/v2"
+	"github.com/dchest/captcha"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/form"
 )
@@ -23,6 +25,7 @@ type Application struct {
 	Public        embed.FS
 	FormDecoder   *form.Decoder
 	FileStore     filestorage.FileStore
+	Sessions      *scs.SessionManager
 }
 
 func (app *Application) GetRouter() http.Handler {
@@ -30,6 +33,7 @@ func (app *Application) GetRouter() http.Handler {
 
 	// Middleware
 	router.Use(app.Logging)
+	router.Use(app.Sessions.LoadAndSave)
 
 	router.Get("/public/*", app.GetPublic())
 
@@ -42,6 +46,7 @@ func (app *Application) GetRouter() http.Handler {
 	router.Post("/{boardId}/{postId}/delete/", app.PostDelete)
 	router.Get("/file/{hash}/", app.GetFile)
 	router.Get("/file/{hash}/thumb/", app.GetFileThumbnail)
+	router.Mount("/captcha/", captcha.Server(240, 80))
 	router.Get("/api/post/{boardId}/{postId}/", app.GetPostJson)
 
 	return router

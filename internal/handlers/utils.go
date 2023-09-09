@@ -8,13 +8,16 @@ import (
 	"runtime/debug"
 )
 
-func (app *Application) getTemplateData() (map[string]interface{}, error) {
+func (app *Application) getTemplateData(r *http.Request) (map[string]interface{}, error) {
 	boards, err := app.BoardModel.GetBoards()
 	if err != nil {
 		return nil, err
 	}
 
+	flash := app.Sessions.PopString(r.Context(), "flash")
+
 	templateData := map[string]interface{}{
+		"Flash":  flash,
 		"Boards": boards,
 	}
 

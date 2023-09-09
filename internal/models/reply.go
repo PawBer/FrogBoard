@@ -321,28 +321,20 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 	return lastInsertId, nil
 }
 
-func (m *ReplyModel) Delete(boardId string, id uint) error {
+func (m *ReplyModel) Delete(boardId string, id uint) (uint, error) {
 	query, params, _ := goqu.Delete("replies").Where(goqu.Ex{"board_id": boardId, "id": id}).ToSQL()
 
 	tx, err := m.DbConn.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	result, err := tx.Exec(query, params...)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	var threadId uint
 
-	if rowsAffected == 0 {
+	err = tx.QueryRow(query+" RETURNING thread_id", params...).Scan(&threadId)
+	if err != nil {
 		tx.Rollback()
-		return sql.ErrNoRows
+		return 0, err
 	}
 
 	query, params, _ = goqu.Delete("post_files").Where(goqu.Ex{
@@ -353,7 +345,7 @@ func (m *ReplyModel) Delete(boardId string, id uint) error {
 	_, err = tx.Exec(query, params...)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return 0, err
 	}
 
 	query, params, _ = goqu.Delete("citations").Where(goqu.Ex{
@@ -364,13 +356,13 @@ func (m *ReplyModel) Delete(boardId string, id uint) error {
 	_, err = tx.Exec(query, params...)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return 0, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return threadId, nil
 }

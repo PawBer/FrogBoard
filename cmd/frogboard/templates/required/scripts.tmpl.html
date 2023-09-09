@@ -142,4 +142,29 @@
     }
 </script>
 {{end}}
+{{with .Flash}}
+<script>
+    Toastify({
+        text: "{{.}}",
+        duration: 3000,
+        position: "center",
+        style: {
+            background: "gray"
+        }
+    }).showToast();
+</script>
+{{end}}
+{{with .CaptchaID}}
+<script>
+    const reloadButton = document.getElementById('captcha-refresh');
+    const captchaImg = document.getElementById('captcha-img');
+    const captchaId = document.getElementById('captcha-id');
+    if (reloadButton && captchaImg && captchaId) {
+        reloadButton.addEventListener("click", (e) => {
+            const id = captchaId.value;
+            captchaImg.src = `/captcha/${id}.png?reload=${Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)}`
+        });
+    }
+</script>
+{{end}}
 {{end}}

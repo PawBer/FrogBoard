@@ -41,7 +41,7 @@ func (app *Application) DeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := app.ReplyModel.Delete(boardId, uint(postId)); err != nil {
+	if _, err := app.ReplyModel.Delete(boardId, uint(postId)); err != nil {
 		app.serverError(w, err)
 		return
 	}

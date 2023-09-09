@@ -14,16 +14,13 @@ func (app *Application) GetIndex() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		boards, err := app.BoardModel.GetBoards()
+		templateData, err := app.getTemplateData(r)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
-		data := map[string]interface{}{
-			"Boards": boards,
-		}
 
-		err = tmpl.ExecuteTemplate(w, "base", &data)
+		err = tmpl.ExecuteTemplate(w, "base", &templateData)
 		if err != nil {
 			app.serverError(w, err)
 			return
