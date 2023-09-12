@@ -73,6 +73,10 @@ func main() {
 	fileInfoModel := &models.FileInfoModel{DbConn: db, FileStore: fileStore}
 	citationModel := &models.CitationModel{DbConn: db}
 
+	userModel := &models.UserModel{
+		DbConn: db,
+	}
+
 	replyModel := &models.ReplyModel{
 		DbConn:        db,
 		FileInfoModel: fileInfoModel,
@@ -93,6 +97,7 @@ func main() {
 		ReplyModel:    replyModel,
 		FileInfoModel: fileInfoModel,
 		CitationModel: citationModel,
+		UserModel:     userModel,
 		Templates:     templates,
 		Public:        public,
 		FormDecoder:   formDecoder,

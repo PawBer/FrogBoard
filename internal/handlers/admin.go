@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-func (app *Application) GetIndex(w http.ResponseWriter, r *http.Request) {
-	requiredTemplates := []string{"index"}
+func (app *Application) GetAdmin(w http.ResponseWriter, r *http.Request) {
+	requiredTemplates := []string{"admin"}
 
 	tmpl, err := app.createTemplate(requiredTemplates, r)
 	if err != nil {
@@ -18,8 +18,6 @@ func (app *Application) GetIndex(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
-	tmpl = tmpl.Funcs(app.getFuncs(r))
 
 	err = tmpl.ExecuteTemplate(w, "base", &templateData)
 	if err != nil {

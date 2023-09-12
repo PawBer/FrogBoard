@@ -1,6 +1,6 @@
 {{define "content"}}
     <div class="flex flex-col items-start w-full px-3">
-        <h1 class="text-2xl font-semibold mb-4 self-center">/{{.BoardID}}/</h2>
+        <h1 class="text-2xl font-semibold mb-4 self-center">/{{.Board.ID}}/ - {{.Board.FullName}}</h2>
         <form method="post" enctype="multipart/form-data" class="bg-white self-center w-full md:w-[30vw] p-3 m-2 md:m-0 border border-gray-200 md:rounded-lg">
             <h2 class="text-xl font-semibold mb-2">Create thread</h2>
             <div class="flex flex-col">

@@ -25,14 +25,14 @@ func (fi FileInfo) ContainsImage() bool {
 }
 
 func (fiModel *FileInfoModel) GetFilesForPosts(boardId string, posts ...*Post) error {
-	if len(posts) == 0 {
-		return nil
-	}
-
 	var ids []uint
 
 	for _, post := range posts {
 		ids = append(ids, post.ID)
+	}
+
+	if len(ids) == 0 {
+		return nil
 	}
 
 	query, params, _ := fiModel.DbConn.From("post_files").Select("post_id", "file_id", "file_name", "content_type").Where(goqu.Ex{

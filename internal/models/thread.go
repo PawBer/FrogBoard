@@ -213,8 +213,8 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []FileInfo) (
 	return lastInsertId, nil
 }
 
-func (m *ThreadModel) Delete(boardId string, id uint) error {
-	query, params, _ := goqu.Delete("threads").Where(goqu.Ex{"board_id": boardId, "id": id}).ToSQL()
+func (m *ThreadModel) Delete(boardId string, threadIds ...uint) error {
+	query, params, _ := goqu.Delete("threads").Where(goqu.Ex{"board_id": boardId, "id": threadIds}).ToSQL()
 
 	tx, err := m.DbConn.Begin()
 	if err != nil {
@@ -238,7 +238,7 @@ func (m *ThreadModel) Delete(boardId string, id uint) error {
 
 	query, params, _ = goqu.From("replies").Select("id").Where(goqu.Ex{
 		"board_id":  boardId,
-		"thread_id": id,
+		"thread_id": threadIds,
 	}).ToSQL()
 
 	rows, err := tx.Query(query, params...)
@@ -248,7 +248,7 @@ func (m *ThreadModel) Delete(boardId string, id uint) error {
 	}
 
 	var ids []uint
-	ids = append(ids, id)
+	ids = append(ids, threadIds...)
 
 	var replyId uint
 	for rows.Next() {
@@ -268,7 +268,7 @@ func (m *ThreadModel) Delete(boardId string, id uint) error {
 
 	query, params, _ = goqu.Delete("replies").Where(goqu.Ex{
 		"board_id":  boardId,
-		"thread_id": id,
+		"thread_id": threadIds,
 	}).ToSQL()
 
 	_, err = tx.Exec(query, params...)

@@ -24,7 +24,7 @@ func (app *Application) getTemplateData(r *http.Request) (map[string]interface{}
 	return templateData, nil
 }
 
-func (app *Application) createTemplate(requiredTemplates []string) (*template.Template, error) {
+func (app *Application) createTemplate(requiredTemplates []string, r *http.Request) (*template.Template, error) {
 	var templateFileNames []string
 
 	requiredFiles, err := fs.ReadDir(app.Templates, "templates/required")
@@ -41,12 +41,20 @@ func (app *Application) createTemplate(requiredTemplates []string) (*template.Te
 		templateFileNames = append(templateFileNames, filePath)
 	}
 
-	tmpl, err := template.ParseFS(app.Templates, templateFileNames...)
+	tmpl, err := template.New("").Funcs(app.getFuncs(r)).ParseFS(app.Templates, templateFileNames...)
 	if err != nil {
 		return nil, err
 	}
 
 	return tmpl, nil
+}
+
+func (app *Application) getFuncs(r *http.Request) template.FuncMap {
+	return map[string]interface{}{
+		"IsAuthenticated": func() bool {
+			return app.Sessions.Exists(r.Context(), "authenticated")
+		},
+	}
 }
 
 func (app *Application) serverError(w http.ResponseWriter, err error) {

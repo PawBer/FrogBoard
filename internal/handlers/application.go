@@ -21,6 +21,7 @@ type Application struct {
 	ReplyModel    *models.ReplyModel
 	FileInfoModel *models.FileInfoModel
 	CitationModel *models.CitationModel
+	UserModel     *models.UserModel
 	Templates     embed.FS
 	Public        embed.FS
 	FormDecoder   *form.Decoder
@@ -37,17 +38,38 @@ func (app *Application) GetRouter() http.Handler {
 
 	router.Get("/public/*", app.GetPublic())
 
-	router.Get("/", app.GetIndex())
-	router.Get("/{boardId}/", app.GetBoard())
+	router.Get("/", app.GetIndex)
+	router.Get("/login/", app.GetLogin)
+	router.Post("/login/", app.PostLogin)
+	router.Post("/logout/", app.PostLogout)
+	router.Get("/{boardId}/", app.GetBoard)
 	router.Post("/{boardId}/", app.PostBoard)
-	router.Get("/{boardId}/{postId}/", app.GetPost())
+	router.Get("/{boardId}/{postId}/", app.GetPost)
 	router.Post("/{boardId}/{postId}/", app.PostThread)
-	router.Get("/{boardId}/{postId}/delete/", app.GetDelete())
-	router.Post("/{boardId}/{postId}/delete/", app.PostDelete)
 	router.Get("/file/{hash}/", app.GetFile)
 	router.Get("/file/{hash}/thumb/", app.GetFileThumbnail)
 	router.Mount("/captcha/", captcha.Server(240, 80))
 	router.Get("/api/post/{boardId}/{postId}/", app.GetPostJson)
+
+	router.Mount("/admin/", app.getAdminRouter())
+
+	return router
+}
+
+func (app *Application) getAdminRouter() http.Handler {
+	router := chi.NewRouter()
+
+	router.Use(app.AdminOnly)
+
+	router.Get("/", app.GetAdmin)
+	router.Get("/board/create/", app.GetBoardCreate)
+	router.Post("/board/create/", app.PostBoardCreate)
+	router.Get("/board/{boardId}/edit/", app.GetBoardEdit)
+	router.Post("/board/{boardId}/edit/", app.PostBoardEdit)
+	router.Get("/board/{boardId}/delete/", app.GetBoardDelete)
+	router.Post("/board/{boardId}/delete/", app.PostBoardDelete)
+	router.Get("/{boardId}/{postId}/delete/", app.GetDelete)
+	router.Post("/{boardId}/{postId}/delete/", app.PostDelete)
 
 	return router
 }

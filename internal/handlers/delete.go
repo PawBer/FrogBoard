@@ -11,45 +11,43 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *Application) GetDelete() http.HandlerFunc {
+func (app *Application) GetDelete(w http.ResponseWriter, r *http.Request) {
 	requiredTemplates := []string{"delete"}
 
-	tmpl, err := app.createTemplate(requiredTemplates)
+	tmpl, err := app.createTemplate(requiredTemplates, r)
 	if err != nil {
 		log.Fatalf("Failed to load templates: %s", err.Error())
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		boardId := chi.URLParam(r, "boardId")
-		postIdStr := chi.URLParam(r, "postId")
-		postId, _ := strconv.ParseUint(postIdStr, 10, 32)
+	boardId := chi.URLParam(r, "boardId")
+	postIdStr := chi.URLParam(r, "postId")
+	postId, _ := strconv.ParseUint(postIdStr, 10, 32)
 
-		templateData, err := app.getTemplateData(r)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
+	templateData, err := app.getTemplateData(r)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-		thread, err := app.ThreadModel.Get(boardId, uint(postId))
+	thread, err := app.ThreadModel.Get(boardId, uint(postId))
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		reply, err := app.ReplyModel.Get(boardId, uint(postId))
 		if err != nil && errors.Is(err, sql.ErrNoRows) {
-			reply, err := app.ReplyModel.Get(boardId, uint(postId))
-			if err != nil && errors.Is(err, sql.ErrNoRows) {
-				app.notFound(w)
-				return
-			}
-
-			templateData["Post"] = reply
-		} else {
-			templateData["Post"] = thread
-		}
-
-		templateData["BoardID"] = boardId
-
-		err = tmpl.ExecuteTemplate(w, "base", &templateData)
-		if err != nil {
-			app.serverError(w, err)
+			app.notFound(w)
 			return
 		}
+
+		templateData["Post"] = reply
+	} else {
+		templateData["Post"] = thread
+	}
+
+	templateData["BoardID"] = boardId
+
+	err = tmpl.ExecuteTemplate(w, "base", &templateData)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 }
 

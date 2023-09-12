@@ -14,57 +14,57 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (app *Application) GetPost() http.HandlerFunc {
+func (app *Application) GetPost(w http.ResponseWriter, r *http.Request) {
 	requiredTemplates := []string{"thread"}
 
-	tmpl, err := app.createTemplate(requiredTemplates)
+	tmpl, err := app.createTemplate(requiredTemplates, r)
 	if err != nil {
 		log.Fatalf("Failed to load templates: %s", err.Error())
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		boardId := chi.URLParam(r, "boardId")
-		postIdStr := chi.URLParam(r, "postId")
-		postId, _ := strconv.ParseUint(postIdStr, 10, 32)
+	boardId := chi.URLParam(r, "boardId")
+	postIdStr := chi.URLParam(r, "postId")
+	postId, _ := strconv.ParseUint(postIdStr, 10, 32)
 
-		thread, err := app.ThreadModel.Get(boardId, uint(postId))
+	thread, err := app.ThreadModel.Get(boardId, uint(postId))
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		reply, err := app.ReplyModel.Get(boardId, uint(postId))
 		if err != nil && errors.Is(err, sql.ErrNoRows) {
-			reply, err := app.ReplyModel.Get(boardId, uint(postId))
-			if err != nil && errors.Is(err, sql.ErrNoRows) {
-				app.notFound(w)
-				return
-			}
-
-			url := fmt.Sprintf("/%s/%d/#p%d", reply.BoardID, reply.ThreadID, reply.ID)
-			http.Redirect(w, r, url, http.StatusFound)
-			return
-		}
-		if err != nil {
-			app.serverError(w, err)
+			app.notFound(w)
 			return
 		}
 
-		captchaId := captcha.New()
+		url := fmt.Sprintf("/%s/%d/#p%d", reply.BoardID, reply.ThreadID, reply.ID)
+		http.Redirect(w, r, url, http.StatusFound)
+		return
+	}
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-		templateData, err := app.getTemplateData(r)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
+	captchaId := captcha.New()
 
-		templateData["BoardID"] = boardId
-		templateData["Thread"] = thread
-		templateData["CaptchaID"] = captchaId
+	templateData, err := app.getTemplateData(r)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-		if app.Sessions.Exists(r.Context(), "form-content") {
-			templateData["FormContent"] = app.Sessions.PopString(r.Context(), "form-content")
-		}
+	templateData["BoardID"] = boardId
+	templateData["Thread"] = thread
+	templateData["CaptchaID"] = captchaId
 
-		err = tmpl.ExecuteTemplate(w, "base", &templateData)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
+	if app.Sessions.Exists(r.Context(), "form-content") {
+		templateData["FormContent"] = app.Sessions.PopString(r.Context(), "form-content")
+	}
+
+	tmpl = tmpl.Funcs(app.getFuncs(r))
+
+	err = tmpl.ExecuteTemplate(w, "base", &templateData)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 }
 

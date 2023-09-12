@@ -9,6 +9,7 @@
     <title>FrogBoard</title>
 </head>
 <body class="flex flex-col min-h-[100vh] bg-green-200">
+    {{$authenticated := .IsAuthenticated}}
     {{template "header" .}}
     <div class="flex justify-center h-full w-full pt-4 pb-4 flex-grow">
         {{template "content" .}}

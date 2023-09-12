@@ -15,14 +15,14 @@ type CitationModel struct {
 }
 
 func (cm *CitationModel) GetCitationsForPosts(boardId string, posts ...*Post) error {
-	if len(posts) == 0 {
-		return nil
-	}
-
 	var ids []uint
 
 	for _, post := range posts {
 		ids = append(ids, post.ID)
+	}
+
+	if len(ids) == 0 {
+		return nil
 	}
 
 	sql, params, _ := goqu.From("citations").Select("board_id", "post_id", "cites").Where(goqu.Ex{

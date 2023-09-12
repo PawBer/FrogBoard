@@ -97,6 +97,10 @@ func (m *ReplyModel) GetLatestReplies(boardId string, limit int, threads ...*Thr
 		ids = append(ids, thread.ID)
 	}
 
+	if len(ids) == 0 {
+		return nil
+	}
+
 	subquery := m.DbConn.From("replies").Select("*",
 		goqu.ROW_NUMBER().Over(goqu.W().PartitionBy("thread_id").OrderBy(goqu.I("id").Desc())).As("ordering"),
 	).Where(

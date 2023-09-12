@@ -1,0 +1,30 @@
+{{define "content"}}
+<div class="flex flex-col w-full items-center">
+    <h1 class="font-semibold text-2xl mb-6">Admin Panel</h1>
+    <h1 class="font-semibold text-xl mb-4">Boards</h1>
+    <table class="bg-white w-fit text-left">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3">ID</td>
+                <th class="px-6 py-3">Full Name</td>
+                <th class="px-6 py-3">Last Post ID</td>
+                <th class="px-6 py-3">Bump Limit</td>
+                <th></td>
+                <th></td>
+            </tr>
+        </thead>
+        <tbody class="space-y-2 divide-y-2">
+        {{range .Boards}}
+            <tr>
+                <td class="px-6 py-3">{{.ID}}</td>
+                <td class="px-6 py-3">{{.FullName}}</td>
+                <td class="px-6 py-3">{{.LastPostID}}</td>
+                <td class="px-6 py-3">{{.BumpLimit}}</td>
+                <td class="px-6 py-3"><a href="/admin/board/{{.ID}}/edit/">Edit</a></td>
+                <td class="px-6 py-3"><a href="/admin/board/{{.ID}}/delete/">Delete</a></td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}
