@@ -131,6 +131,11 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) GetBoardEdit(w http.ResponseWriter, r *http.Request) {
+	if !app.hasPermission(r, models.Admin) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
 	requiredTemplates := []string{"boardedit"}
 
 	tmpl, err := app.createTemplate(requiredTemplates, r)
@@ -171,6 +176,11 @@ func (app *Application) GetBoardEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) PostBoardEdit(w http.ResponseWriter, r *http.Request) {
+	if !app.hasPermission(r, models.Admin) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
 	formModel := struct {
 		ID        string `form:"board-id"`
 		FullName  string `form:"full-name"`
@@ -214,6 +224,11 @@ func (app *Application) PostBoardEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) GetBoardDelete(w http.ResponseWriter, r *http.Request) {
+	if !app.hasPermission(r, models.Admin) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
 	requiredTemplates := []string{"boarddelete"}
 
 	tmpl, err := app.createTemplate(requiredTemplates, r)
@@ -250,6 +265,11 @@ func (app *Application) GetBoardDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) PostBoardDelete(w http.ResponseWriter, r *http.Request) {
+	if !app.hasPermission(r, models.Admin) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
 	boardId := chi.URLParam(r, "boardId")
 
 	err := app.BoardModel.Delete(boardId)
@@ -269,6 +289,11 @@ func (app *Application) PostBoardDelete(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *Application) GetBoardCreate(w http.ResponseWriter, r *http.Request) {
+	if !app.hasPermission(r, models.Admin) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
 	requiredTemplates := []string{"boardcreate"}
 
 	tmpl, err := app.createTemplate(requiredTemplates, r)
@@ -296,6 +321,11 @@ func (app *Application) GetBoardCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) PostBoardCreate(w http.ResponseWriter, r *http.Request) {
+	if !app.hasPermission(r, models.Admin) {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
 	formModel := struct {
 		ID        string `form:"board-id"`
 		FullName  string `form:"full-name"`

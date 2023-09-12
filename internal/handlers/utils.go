@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/PawBer/FrogBoard/internal/models"
 )
 
 func (app *Application) getTemplateData(r *http.Request) (map[string]interface{}, error) {
@@ -54,7 +56,16 @@ func (app *Application) getFuncs(r *http.Request) template.FuncMap {
 		"IsAuthenticated": func() bool {
 			return app.Sessions.Exists(r.Context(), "authenticated")
 		},
+		"GetPermission": func() int {
+			return app.Sessions.Get(r.Context(), "permission").(int)
+		},
 	}
+}
+
+func (app *Application) hasPermission(r *http.Request, perm models.UserPermission) bool {
+	permission := models.UserPermission(app.Sessions.Get(r.Context(), "permission").(int))
+
+	return permission == perm
 }
 
 func (app *Application) serverError(w http.ResponseWriter, err error) {

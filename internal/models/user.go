@@ -50,5 +50,5 @@ func (um *UserModel) Login(username, password string) (User, error) {
 		return User{}, WrongPasswordError{}
 	}
 
-	return User{Username: username, Permission: Admin, DisplayName: displayName}, nil
+	return User{Username: username, Permission: permission, DisplayName: displayName}, nil
 }

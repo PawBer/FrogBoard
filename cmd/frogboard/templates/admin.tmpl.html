@@ -9,8 +9,10 @@
                 <th class="px-6 py-3">Full Name</td>
                 <th class="px-6 py-3">Last Post ID</td>
                 <th class="px-6 py-3">Bump Limit</td>
+                {{if eq GetPermission 0}}
                 <th></td>
                 <th></td>
+                {{end}}
             </tr>
         </thead>
         <tbody class="space-y-2 divide-y-2">
@@ -20,8 +22,10 @@
                 <td class="px-6 py-3">{{.FullName}}</td>
                 <td class="px-6 py-3">{{.LastPostID}}</td>
                 <td class="px-6 py-3">{{.BumpLimit}}</td>
+                {{if eq GetPermission 0}}
                 <td class="px-6 py-3"><a href="/admin/board/{{.ID}}/edit/">Edit</a></td>
                 <td class="px-6 py-3"><a href="/admin/board/{{.ID}}/delete/">Delete</a></td>
+                {{end}}
             </tr>
         {{end}}
         </tbody>
