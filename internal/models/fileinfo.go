@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -84,6 +83,42 @@ func (fiModel *FileInfoModel) InsertFile(fileName string, file []byte) (FileInfo
 	return FileInfo{ID: key, Name: fileName, ContentType: contentType}, nil
 }
 
+func (fiModel *FileInfoModel) Delete(fileId string) error {
+	query, params, _ := goqu.Delete("file_infos").Where(goqu.Ex{
+		"id": fileId,
+	}).ToSQL()
+
+	tx, err := fiModel.DbConn.Begin()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	query, params, _ = goqu.Delete("post_files").Where(goqu.Ex{
+		"file_id": fileId,
+	}).ToSQL()
+
+	_, err = tx.Exec(query, params...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = fiModel.FileStore.DeleteFiles(fileId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 func (fiModel *FileInfoModel) DeleteOrphanedFiles() error {
 	query, params, _ := goqu.From("post_files").Select("file_id").ToSQL()
 
@@ -93,7 +128,7 @@ func (fiModel *FileInfoModel) DeleteOrphanedFiles() error {
 		return err
 	}
 
-	rows, err := fiModel.DbConn.Query(query, params...)
+	rows, err := tx.Query(query, params...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -121,7 +156,7 @@ func (fiModel *FileInfoModel) DeleteOrphanedFiles() error {
 		"id": goqu.Op{"notIn": fileIds},
 	}).ToSQL()
 
-	rows, err = fiModel.DbConn.Query(query+" RETURNING id", params...)
+	rows, err = tx.Query(query+" RETURNING id", params...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -138,8 +173,6 @@ func (fiModel *FileInfoModel) DeleteOrphanedFiles() error {
 
 		deletedFileIds = append(deletedFileIds, fileId)
 	}
-
-	fmt.Printf("Deleted files: %v\n", deletedFileIds)
 
 	err = fiModel.FileStore.DeleteFiles(deletedFileIds...)
 	if err != nil {

@@ -18,7 +18,12 @@
 {{if eq .FileCount 0}}
 {{else if eq .FileCount 1}}
     {{with index .Files 0}}
-    <a class="text-blue-500 text-sm underline mb-2 flex justify-center md:block md:w-fit md:ml-3" href="/file/{{.ID}}/">{{.Name}}</a>
+    <div class="flex flex-col md:flex-row md:flex-wrap">
+        <a class="text-blue-500 text-sm underline flex justify-center md:block md:w-fit md:ml-3" href="/file/{{.ID}}/">{{.Name}}</a>
+        {{if IsAuthenticated}}
+        <a class="text-red-500 text-sm mb-2 flex justify-center md:block md:w-fit md:ml-3" href="/admin/file/{{.ID}}/delete/">Delete</a>
+        {{end}}
+    </div>
         <div class="flex flex-col items-center md:items-start m-1 md:m-0 md:mr-4 md:ml-3 md:mb-3 md:w-fit md:float-left">
             {{if .ContainsImage}}
             <div class="post-img flex justify-center cursor-pointer">

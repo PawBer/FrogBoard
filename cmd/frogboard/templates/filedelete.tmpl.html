@@ -1,0 +1,14 @@
+{{define "content"}}
+<div class="flex flex-col items-center justify-center">
+    <h1 class="font-semibold text-4xl mb-3">File Deletion</h1>
+    <p class="text-xl mb-3">Do you really want to delete this file. It will be removed from all posts that reference it.</p>
+    <p class="text-red-600 mb-3">This action can't be reversed</p>
+    <img class="max-w-[35vw] md:max-h-[100px] xl:max-h-[150px] 2xl:max-h-[200px] mb-2" src="/file/{{.ID}}/thumb/" alt="Thumbnail for post image" />
+    <div class="flex space-x-3 w-full items-center justify-center">
+        <a class="text-white bg-blue-700 hover:bg-blue-800 text-center rounded-lg px-5 py-2.5 text-sm" href="/admin/">No</a>
+        <form method="post">
+            <button type="submit" class="text-white bg-red-700 hover:bg-red-800 px-5 py-2.5 text-center rounded-lg text-sm w-full">Yes</button>
+        </form>
+    </div>  
+</div>
+{{end}}

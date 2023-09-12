@@ -70,6 +70,8 @@ func (app *Application) getAdminRouter() http.Handler {
 	router.Post("/board/{boardId}/delete/", app.PostBoardDelete)
 	router.Get("/{boardId}/{postId}/delete/", app.GetDelete)
 	router.Post("/{boardId}/{postId}/delete/", app.PostDelete)
+	router.Get("/file/{fileId}/delete/", app.GetFileDelete)
+	router.Post("/file/{fileId}/delete/", app.PostFileDelete)
 
 	return router
 }
