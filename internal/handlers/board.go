@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -21,7 +22,36 @@ func (app *Application) GetBoard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	boardId := chi.URLParam(r, "boardId")
-	threads, err := app.ThreadModel.GetLatest(boardId)
+
+	threadCount, err := app.ThreadModel.GetThreadCount(boardId)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	var pageNumber uint
+
+	if threadCount <= 10 {
+		pageNumber = 0
+	} else if r.URL.Query().Has("page") {
+		queryPageNumber, err := strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+
+		pageNumber = uint(queryPageNumber) - 1
+	} else {
+		pageNumber = 0
+	}
+
+	pageCount := math.Ceil(float64(threadCount) / 10)
+	var pageNumbers []int
+	for i := 1; i <= int(pageCount); i++ {
+		pageNumbers = append(pageNumbers, i)
+	}
+
+	threads, err := app.ThreadModel.GetLatest(boardId, pageNumber)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -46,6 +76,7 @@ func (app *Application) GetBoard(w http.ResponseWriter, r *http.Request) {
 
 	templateData["Board"] = board
 	templateData["Threads"] = threads
+	templateData["PageNumbers"] = pageNumbers
 	templateData["CaptchaID"] = captchaId
 
 	if app.Sessions.Exists(r.Context(), "form-title") && app.Sessions.Exists(r.Context(), "form-content") {

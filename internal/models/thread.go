@@ -25,12 +25,26 @@ func (t Thread) GetType() string {
 	return "thread"
 }
 
-func (m *ThreadModel) GetLatest(boardId string) ([]*Thread, error) {
+func (m *ThreadModel) GetThreadCount(boardId string) (uint, error) {
+	query, params, _ := goqu.From("threads").Select(goqu.COUNT("*")).Where(goqu.Ex{
+		"board_id": boardId,
+	}).ToSQL()
+
+	var count uint
+	err := m.DbConn.QueryRow(query, params...).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (m *ThreadModel) GetLatest(boardId string, pageNumber uint) ([]*Thread, error) {
 	var threads []*Thread
 
-	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+	query, params, _ := goqu.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
 		"board_id": boardId,
-	}).Order(goqu.I("last_bump").Desc()).Limit(15).ToSQL()
+	}).Order(goqu.I("last_bump").Desc()).Limit(10).Offset(pageNumber * 10).ToSQL()
 
 	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {

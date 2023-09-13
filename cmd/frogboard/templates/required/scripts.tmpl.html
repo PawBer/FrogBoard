@@ -140,6 +140,23 @@
         });
     }
 </script>
+<script>
+    const pageButtons = document.getElementsByClassName("page-button");
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentPage = urlParams.get("page");
+
+    if (currentPage == null) {
+        currentPage = 1;
+    }
+
+    for (const button of pageButtons) {
+        if (button.dataset.page == currentPage) {
+            button.style.pointerEvents = "none";
+            button.style.cursor = "default";
+            button.style.fontWeight = "bold";
+        }
+    }
+</script>
 {{with .Flash}}
 <script>
     Toastify({

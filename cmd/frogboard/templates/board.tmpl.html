@@ -30,6 +30,11 @@
         </form>
     {{range .Threads}}
         {{template "thread" .}}
-    {{end}} 
+    {{end}}
+    <div class="flex space-x-3 bg-white rounded-md p-3 flex-wrap">
+    {{range $i, $v := .PageNumbers}}
+        <a data-page="{{$v}}" class="page-button text-xl" href="/{{$.Board.ID}}/?page={{$v}}">{{$v}}</a>
+    {{end}}
+    </div>
     </div>
 {{end}}
