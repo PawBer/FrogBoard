@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -128,7 +129,8 @@ func (app *Application) PostThread(w http.ResponseWriter, r *http.Request) {
 		fileInfos = append(fileInfos, fileInfo)
 	}
 
-	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content, fileInfos)
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	postId, err := app.ReplyModel.Insert(boardId, uint(threadId), formModel.Content, fileInfos, host)
 	if err != nil {
 		app.serverError(w, err)
 		return

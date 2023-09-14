@@ -11,8 +11,9 @@
     </div>
     {{end}}
     <div class="hidden md:block md:flex-1"></div>
-    <a class="text-blue-500 hover:underline" href="/{{.BoardID}}/{{.ID}}/">View</a>
+    <a class="text-blue-500 hover:underline" href="/{{.BoardID}}/{{.ID}}/#p{{.ID}}">View</a>
     {{if IsAuthenticated}}
+    <a href="/admin/bans/create/?ip={{.PosterIP}}" class="text-red-600 hover:underline md:ml-auto">Ban</a>
     <a data-board="{{.BoardID}}" data-post="{{.ID}}" href="/admin/{{.BoardID}}/{{.ID}}/delete/" class="text-red-600 hover:underline md:ml-auto">Delete</a>
     {{end}}
 </div>

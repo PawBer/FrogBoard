@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -51,7 +52,7 @@ func (app *Application) GetBoard(w http.ResponseWriter, r *http.Request) {
 		pageNumbers = append(pageNumbers, i)
 	}
 
-	threads, err := app.ThreadModel.GetLatest(boardId, pageNumber)
+	threads, err := app.ThreadModel.GetLatest(boardId, pageNumber, 10)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -151,7 +152,8 @@ func (app *Application) PostBoard(w http.ResponseWriter, r *http.Request) {
 		fileInfos = append(fileInfos, fileInfo)
 	}
 
-	postId, err := app.ThreadModel.Insert(boardId, formModel.Title, formModel.Content, fileInfos)
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	postId, err := app.ThreadModel.Insert(boardId, formModel.Title, formModel.Content, fileInfos, host)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -286,8 +288,6 @@ func (app *Application) GetBoardDelete(w http.ResponseWriter, r *http.Request) {
 
 	templateData["Board"] = board
 
-	tmpl = tmpl.Funcs(app.getFuncs(r))
-
 	err = tmpl.ExecuteTemplate(w, "base", &templateData)
 	if err != nil {
 		app.serverError(w, err)
@@ -315,7 +315,7 @@ func (app *Application) PostBoardDelete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	app.Sessions.Put(r.Context(), "flash", "Board deleted succesfully")
+	app.Sessions.Put(r.Context(), "flash", "Board deleted successfully")
 	http.Redirect(w, r, "/admin/", http.StatusSeeOther)
 }
 

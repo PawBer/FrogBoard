@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -39,12 +40,12 @@ func (m *ThreadModel) GetThreadCount(boardId string) (uint, error) {
 	return count, nil
 }
 
-func (m *ThreadModel) GetLatest(boardId string, pageNumber uint) ([]*Thread, error) {
+func (m *ThreadModel) GetLatest(boardId string, pageNumber, itemsPerPage uint) ([]*Thread, error) {
 	var threads []*Thread
 
-	query, params, _ := goqu.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+	query, params, _ := goqu.From("threads").Select("id", "board_id", "created_at", "content", "title", "poster_ip").Where(goqu.Ex{
 		"board_id": boardId,
-	}).Order(goqu.I("last_bump").Desc()).Limit(10).Offset(pageNumber * 10).ToSQL()
+	}).Order(goqu.I("last_bump").Desc()).Limit(itemsPerPage).Offset(pageNumber * itemsPerPage).ToSQL()
 
 	rows, err := m.DbConn.Query(query, params...)
 	if err != nil {
@@ -53,16 +54,17 @@ func (m *ThreadModel) GetLatest(boardId string, pageNumber uint) ([]*Thread, err
 
 	for rows.Next() {
 		var id uint
-		var boardId, content, title string
+		var boardId, content, title, poster_ip string
 		var creationTime time.Time
 
-		rows.Scan(&id, &boardId, &creationTime, &content, &title)
+		rows.Scan(&id, &boardId, &creationTime, &content, &title, &poster_ip)
 		thread := &Thread{
 			Post: Post{
 				ID:        id,
 				BoardID:   boardId,
 				CreatedAt: creationTime,
 				Content:   content,
+				PosterIP:  net.ParseIP(poster_ip),
 			},
 			Title: title,
 		}
@@ -96,17 +98,20 @@ func (m *ThreadModel) GetLatest(boardId string, pageNumber uint) ([]*Thread, err
 func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	var thread Thread
 
-	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("threads").Select("id", "board_id", "created_at", "content", "title", "poster_ip").Where(goqu.Ex{
 		"board_id": boardId,
 		"id":       threadId,
 	}).ToSQL()
 
 	row := m.DbConn.QueryRow(query, params...)
 
-	err := row.Scan(&thread.ID, &thread.BoardID, &thread.CreatedAt, &thread.Content, &thread.Title)
+	var posterIp string
+	err := row.Scan(&thread.ID, &thread.BoardID, &thread.CreatedAt, &thread.Content, &thread.Title, &posterIp)
 	if err != nil {
 		return nil, err
 	}
+
+	thread.PosterIP = net.ParseIP(posterIp)
 
 	err = m.FileInfoModel.GetFilesForPosts(boardId, &thread.Post)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -126,7 +131,7 @@ func (m *ThreadModel) Get(boardId string, threadId uint) (*Thread, error) {
 	return &thread, nil
 }
 
-func (m *ThreadModel) Insert(boardId, title, content string, files []FileInfo) (uint, error) {
+func (m *ThreadModel) Insert(boardId, title, content string, files []FileInfo, posterIp string) (uint, error) {
 	var board Board
 
 	tx, err := m.DbConn.Begin()
@@ -153,6 +158,7 @@ func (m *ThreadModel) Insert(boardId, title, content string, files []FileInfo) (
 		"title":      title,
 		"last_bump":  goqu.V("NOW()"),
 		"post_count": 0,
+		"poster_ip":  posterIp,
 	}).ToSQL()
 
 	var lastInsertId uint

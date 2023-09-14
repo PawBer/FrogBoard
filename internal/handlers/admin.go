@@ -13,11 +13,19 @@ func (app *Application) GetAdmin(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Failed to load templates: %s", err.Error())
 	}
 
+	bans, err := app.BanModel.GetBans(0, 15)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
 	templateData, err := app.getTemplateData(r)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
+
+	templateData["Bans"] = bans
 
 	err = tmpl.ExecuteTemplate(w, "base", &templateData)
 	if err != nil {

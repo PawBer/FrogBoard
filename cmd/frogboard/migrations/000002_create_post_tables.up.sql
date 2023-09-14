@@ -25,8 +25,9 @@ CREATE TABLE IF NOT EXISTS public.threads (
     created_at TIMESTAMP NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    post_count INT,
-    last_bump TIMESTAMP,
+    post_count INT NOT NULL,
+    last_bump TIMESTAMP NOT NULL,
+    poster_ip VARCHAR(39) NOT NULL,
     PRIMARY KEY(board_id, id)
 );
 
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.replies (
     created_at TIMESTAMP NOT NULL,
     thread_id INT NOT NULL,
     content TEXT NOT NULL,
+    poster_ip VARCHAR(39) NOT NULL,
     PRIMARY KEY(board_id, id)
 );
 COMMIT;

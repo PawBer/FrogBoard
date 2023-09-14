@@ -1,0 +1,34 @@
+{{define "content"}}
+<div class="flex flex-col items-center">
+<h1 class="font-semibold text-xl mb-4">Bans</h1>
+<div class="flex flex-col">
+    <table class="bg-white w-fit text-left mb-4">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3">IP</th>
+                <th class="px-6 py-3">Reason</th>
+                <th class="px-6 py-3">Start Date</th>
+                <th class="px-6 py-3">End Date</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody class="space-y-2 divide-y-2">
+        {{range .Bans}}
+            <tr>
+                <td class="px-6 py-3">{{.IP}}</td>
+                <td class="px-6 py-3">{{.Reason}}</td>
+                <td class="px-6 py-3">{{.StartDate}}</td>
+                <td class="px-6 py-3">{{.EndDate}}</td>
+                <td class="px-6 py-3"><a class="hover:underline" href="/admin/board/{{.IP}}/delete/">Cancel</a></td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+</div>
+<div class="flex space-x-3 bg-white rounded-md p-3 flex-wrap w-fit self-start">
+    {{range $i, $v := .PageNumbers}}
+    <a data-page="{{$v}}" class="page-button text-xl" href="/admin/bans/?page={{$v}}">{{$v}}</a>
+    {{end}}
+</div>
+</div>
+{{end}}

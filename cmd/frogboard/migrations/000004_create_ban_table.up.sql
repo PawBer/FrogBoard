@@ -1,0 +1,8 @@
+BEGIN;
+CREATE TABLE IF NOT EXISTS public.bans (
+    ip VARCHAR(39) NOT NULL PRIMARY KEY,
+    reason VARCHAR(255) NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL
+);
+COMMIT;

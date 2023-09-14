@@ -2,33 +2,64 @@
 <div class="flex flex-col w-full items-center">
     <h1 class="font-semibold text-2xl mb-6">Admin Panel</h1>
     <h1 class="font-semibold text-xl mb-4">Boards</h1>
-    <table class="bg-white w-fit text-left">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-6 py-3">ID</td>
-                <th class="px-6 py-3">Full Name</td>
-                <th class="px-6 py-3">Last Post ID</td>
-                <th class="px-6 py-3">Bump Limit</td>
-                {{if eq GetPermission 0}}
-                <th></td>
-                <th></td>
-                {{end}}
-            </tr>
-        </thead>
-        <tbody class="space-y-2 divide-y-2">
-        {{range .Boards}}
-            <tr>
-                <td class="px-6 py-3">{{.ID}}</td>
-                <td class="px-6 py-3">{{.FullName}}</td>
-                <td class="px-6 py-3">{{.LastPostID}}</td>
-                <td class="px-6 py-3">{{.BumpLimit}}</td>
-                {{if eq GetPermission 0}}
-                <td class="px-6 py-3"><a href="/admin/board/{{.ID}}/edit/">Edit</a></td>
-                <td class="px-6 py-3"><a href="/admin/board/{{.ID}}/delete/">Delete</a></td>
-                {{end}}
-            </tr>
+    <div class="flex flex-col">
+        {{if eq GetPermission 0}}
+        <a class="text-blue-500 hover:underline self-end m-1" href="/admin/boards/create/">Create</a>
         {{end}}
-        </tbody>
-    </table>
+        <table class="bg-white w-fit text-left mb-4">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3">ID</th>
+                    <th class="px-6 py-3">Full Name</th>
+                    <th class="px-6 py-3">Last Post ID</th>
+                    <th class="px-6 py-3">Bump Limit</th>
+                    {{if eq GetPermission 0}}
+                    <th></th>
+                    <th></th>
+                    {{end}}
+                </tr>
+            </thead>
+            <tbody class="space-y-2 divide-y-2">
+            {{range .Boards}}
+                <tr>
+                    <td class="px-6 py-3">{{.ID}}</td>
+                    <td class="px-6 py-3">{{.FullName}}</td>
+                    <td class="px-6 py-3">{{.LastPostID}}</td>
+                    <td class="px-6 py-3">{{.BumpLimit}}</td>
+                    {{if eq GetPermission 0}}
+                    <td class="px-6 py-3"><a class="hover:underline" href="/admin/board/{{.ID}}/edit/">Edit</a></td>
+                    <td class="px-6 py-3"><a class="hover:underline" href="/admin/board/{{.ID}}/delete/">Delete</a></td>
+                    {{end}}
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+    <h1 class="font-semibold text-xl mb-4">Bans</h1>
+    <div class="flex flex-col">
+        <a class="text-blue-500 hover:underline self-end m-1" href="/admin/bans/">See All</a>
+        <table class="bg-white w-fit text-left mb-4">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3">IP</th>
+                    <th class="px-6 py-3">Reason</th>
+                    <th class="px-6 py-3">Start Date</th>
+                    <th class="px-6 py-3">End Date</th>
+                    <th></td>
+                </tr>
+            </thead>
+            <tbody class="space-y-2 divide-y-2">
+            {{range .Bans}}
+                <tr>
+                    <td class="px-6 py-3">{{.IP}}</td>
+                    <td class="px-6 py-3">{{.Reason}}</td>
+                    <td class="px-6 py-3">{{.StartDate}}</td>
+                    <td class="px-6 py-3">{{.EndDate}}</td>
+                    <td class="px-6 py-3"><a class="hover:underline" href="/admin/bans/{{.IP}}/delete/">Cancel</a></td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
 </div>
 {{end}}

@@ -22,6 +22,7 @@ type Application struct {
 	FileInfoModel *models.FileInfoModel
 	CitationModel *models.CitationModel
 	UserModel     *models.UserModel
+	BanModel      *models.BanModel
 	Templates     embed.FS
 	Public        embed.FS
 	FormDecoder   *form.Decoder
@@ -34,6 +35,7 @@ func (app *Application) GetRouter() http.Handler {
 
 	// Middleware
 	router.Use(app.Logging)
+	router.Use(app.BlockBannedUsers)
 	router.Use(app.Sessions.LoadAndSave)
 
 	router.Get("/public/*", app.GetPublic())
@@ -72,6 +74,11 @@ func (app *Application) getAdminRouter() http.Handler {
 	router.Post("/{boardId}/{postId}/delete/", app.PostDelete)
 	router.Get("/file/{fileId}/delete/", app.GetFileDelete)
 	router.Post("/file/{fileId}/delete/", app.PostFileDelete)
+	router.Get("/bans/", app.GetBans)
+	router.Get("/bans/create/", app.GetBanCreate)
+	router.Post("/bans/create/", app.PostBanCreate)
+	router.Get("/bans/{ip}/delete/", app.GetBanDelete)
+	router.Post("/bans/{ip}/delete/", app.PostBanDelete)
 
 	return router
 }

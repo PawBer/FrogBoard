@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/PawBer/FrogBoard/internal/handlers"
 	"github.com/PawBer/FrogBoard/internal/models"
@@ -49,7 +50,6 @@ func main() {
 	infoLog.Output(2, "Starting migration")
 	err = migrator.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		migrator.Down()
 		log.Fatalf("Error migrating: %s", err.Error())
 	}
 
@@ -67,6 +67,7 @@ func main() {
 	}
 
 	sessionStore := scs.New()
+	sessionStore.Lifetime = 24 * 7 * time.Hour
 	sessionStore.Store = redisstore.New(pool)
 
 	boardModel := &models.BoardModel{DbConn: db}
@@ -74,6 +75,10 @@ func main() {
 	citationModel := &models.CitationModel{DbConn: db}
 
 	userModel := &models.UserModel{
+		DbConn: db,
+	}
+
+	banModel := &models.BanModel{
 		DbConn: db,
 	}
 
@@ -98,6 +103,7 @@ func main() {
 		FileInfoModel: fileInfoModel,
 		CitationModel: citationModel,
 		UserModel:     userModel,
+		BanModel:      banModel,
 		Templates:     templates,
 		Public:        public,
 		FormDecoder:   formDecoder,

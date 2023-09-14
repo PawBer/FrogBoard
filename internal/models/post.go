@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ type Post struct {
 	Content   string
 	Files     []FileInfo
 	Citations []Citation
+	PosterIP  net.IP
 }
 
 var PostCitationRegex = regexp.MustCompile("&gt;&gt; ([0-9]+)")

@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -31,7 +32,7 @@ func (m *ReplyModel) GetRepliesToThreads(boardId string, threads ...*Thread) err
 		ids = append(ids, thread.ID)
 	}
 
-	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id", "poster_ip").Where(goqu.Ex{
 		"board_id":  boardId,
 		"thread_id": ids,
 	}).Order(goqu.I("id").Asc()).ToSQL()
@@ -43,16 +44,17 @@ func (m *ReplyModel) GetRepliesToThreads(boardId string, threads ...*Thread) err
 
 	for rows.Next() {
 		var id, threadId uint
-		var boardId, content string
+		var boardId, content, poster_ip string
 		var creationTime time.Time
 
-		rows.Scan(&id, &boardId, &creationTime, &content, &threadId)
+		rows.Scan(&id, &boardId, &creationTime, &content, &threadId, &poster_ip)
 		reply := &Reply{
 			Post: Post{
 				ID:        id,
 				BoardID:   boardId,
 				CreatedAt: creationTime,
 				Content:   content,
+				PosterIP:  net.ParseIP(poster_ip),
 			},
 			ThreadID: threadId,
 		}
@@ -107,7 +109,7 @@ func (m *ReplyModel) GetLatestReplies(boardId string, limit int, threads ...*Thr
 		goqu.Ex{"board_id": boardId, "thread_id": ids},
 	)
 
-	query, params, _ := m.DbConn.From(subquery).Select("id", "board_id", "created_at", "content", "thread_id").Where(
+	query, params, _ := m.DbConn.From(subquery).Select("id", "board_id", "created_at", "content", "thread_id", "poster_ip").Where(
 		goqu.Ex{"ordering": goqu.Op{"lte": limit}},
 	).Order(goqu.I("ordering").Desc()).ToSQL()
 
@@ -118,16 +120,17 @@ func (m *ReplyModel) GetLatestReplies(boardId string, limit int, threads ...*Thr
 
 	for rows.Next() {
 		var id, threadId uint
-		var boardId, content string
+		var boardId, content, posterIp string
 		var creationTime time.Time
 
-		rows.Scan(&id, &boardId, &creationTime, &content, &threadId)
+		rows.Scan(&id, &boardId, &creationTime, &content, &threadId, &posterIp)
 		reply := &Reply{
 			Post: Post{
 				ID:        id,
 				BoardID:   boardId,
 				CreatedAt: creationTime,
 				Content:   content,
+				PosterIP:  net.ParseIP(posterIp),
 			},
 			ThreadID: threadId,
 		}
@@ -164,17 +167,20 @@ func (m *ReplyModel) GetLatestReplies(boardId string, limit int, threads ...*Thr
 func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 	reply := Reply{}
 
-	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id").Where(goqu.Ex{
+	query, params, _ := m.DbConn.From("replies").Select("id", "board_id", "created_at", "content", "thread_id", "poster_ip").Where(goqu.Ex{
 		"board_id": boardId,
 		"id":       replyId,
 	}).ToSQL()
 
 	row := m.DbConn.QueryRow(query, params...)
 
-	err := row.Scan(&reply.ID, &reply.BoardID, &reply.CreatedAt, &reply.Content, &reply.ThreadID)
+	var posterIp string
+	err := row.Scan(&reply.ID, &reply.BoardID, &reply.CreatedAt, &reply.Content, &reply.ThreadID, &posterIp)
 	if err != nil {
 		return nil, err
 	}
+
+	reply.PosterIP = net.ParseIP(posterIp)
 
 	err = m.FileInfoModel.GetFilesForPosts(boardId, &reply.Post)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -189,7 +195,7 @@ func (m *ReplyModel) Get(boardId string, replyId uint) (*Reply, error) {
 	return &reply, nil
 }
 
-func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files []FileInfo) (uint, error) {
+func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files []FileInfo, posterIp string) (uint, error) {
 	var board Board
 
 	tx, err := m.DbConn.Begin()
@@ -214,6 +220,7 @@ func (m *ReplyModel) Insert(boardId string, threadId uint, content string, files
 		"content":    content,
 		"created_at": goqu.V("NOW()"),
 		"thread_id":  threadId,
+		"poster_ip":  posterIp,
 	}).ToSQL()
 
 	var lastInsertId uint
