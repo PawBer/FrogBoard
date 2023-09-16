@@ -97,5 +97,31 @@
         </table>
     </div>
     {{end}}
+    <h1 class="font-semibold text-xl mb-4">Latest Threads</h1>
+    <div class="flex flex-wrap justify-center">
+    {{range .LatestThreads}}
+        <div class="flex flex-col bg-white p-4 md:max-w-[50vw] m-2 h-fit basis-96 flex-shrink">
+            <a href="/{{.BoardID}}/{{.ID}}/">Board: {{.BoardID}}</a>
+            <a href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
+            <p>{{.FormatedContent}}</p>
+        </div>
+    {{end}}
+    </div>
+    <h1 class="font-semibold text-xl mb-4">Latest Replies</h1>
+    <div class="flex flex-wrap justify-center">
+    {{range .LatestReplies}}
+        <div class="flex flex-col bg-white p-4 md:max-w-[35vw] m-2 h-fit basis-96 flex-shrink">
+            <a href="/{{.BoardID}}/{{.ID}}/">Board: {{.BoardID}}</a>
+            <a href="/{{.BoardID}}/{{.ID}}/">>> {{.ID}}</a>
+            <p>{{.FormatedContent}}</p>
+        </div>
+    {{end}}
+    </div>
+    <h1 class="font-semibold text-xl mb-4">Latest Files</h1>
+    <div class="flex flex-wrap justify-center">
+    {{range .LatestFiles}}
+        <a class="m-2" href="/{{.BoardID}}/{{.PostID}}/"><img onerror="this.src='/public/file.png'" class="max-w-[35vw] md:max-h-[100px] xl:max-h-[150px] 2xl:max-h-[200px]" src="/file/{{.FileID}}/thumb/" alt="Thumbnail for post image" /></a>
+    {{end}}
+    </div>
 </div>
 {{end}}

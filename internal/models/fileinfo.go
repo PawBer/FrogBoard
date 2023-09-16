@@ -65,6 +65,40 @@ func (fiModel *FileInfoModel) GetFilesForPosts(boardId string, posts ...*Post) e
 	return nil
 }
 
+func (fiModel *FileInfoModel) GetLatestFiles() ([]map[string]interface{}, error) {
+	fileInfos := []map[string]interface{}{}
+
+	query, params, _ := fiModel.DbConn.From("post_files").Select("post_id", "file_id", "file_name", "board_id").Where(goqu.Ex{}).LeftJoin(
+		goqu.T("file_infos"),
+		goqu.On(goqu.Ex{"post_files.file_id": goqu.I("file_infos.id")}),
+	).Order(goqu.I("post_files.id").Desc()).Limit(15).ToSQL()
+
+	rows, err := fiModel.DbConn.Query(query, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	var postId uint
+	var fileId, fileName, boardId string
+	for rows.Next() {
+		err = rows.Scan(&postId, &fileId, &fileName, &boardId)
+		if err != nil {
+			return nil, err
+		}
+
+		fileInfo := map[string]interface{}{}
+
+		fileInfo["BoardID"] = boardId
+		fileInfo["PostID"] = postId
+		fileInfo["FileID"] = fileId
+		fileInfo["Filename"] = postId
+
+		fileInfos = append(fileInfos, fileInfo)
+	}
+
+	return fileInfos, nil
+}
+
 func (fiModel *FileInfoModel) InsertFile(fileName string, file []byte) (FileInfo, error) {
 	contentType := http.DetectContentType(file)
 

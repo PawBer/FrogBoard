@@ -33,7 +33,7 @@
                 <img class="hidden" src="/file/{{.ID}}/" alt="Post image" />
             </div>
             {{else}}
-            <a class="block w-1/4 md:w-[150px] md:h-[100px]" href="/file/{{.ID}}/"><img src="/public/file.png" alt="Thumbnail for post file" /></a>
+            <a class="md:max-h-[100px]" href="/file/{{.ID}}/"><img class="md:max-h-[100px]" src="/public/file.png" alt="Thumbnail for post file" /></a>
             {{end}}
         </div>
         {{end}}

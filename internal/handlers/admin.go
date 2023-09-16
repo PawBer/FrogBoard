@@ -25,6 +25,24 @@ func (app *Application) GetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	latestThreads, err := app.ThreadModel.GetLatestFromEveryBoard()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	latestReplies, err := app.ReplyModel.GetLatestRepliesFromEveryThread()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	latestFiles, err := app.FileInfoModel.GetLatestFiles()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
 	templateData, err := app.getTemplateData(r)
 	if err != nil {
 		app.serverError(w, err)
@@ -33,6 +51,9 @@ func (app *Application) GetAdmin(w http.ResponseWriter, r *http.Request) {
 
 	templateData["Bans"] = bans
 	templateData["Users"] = users
+	templateData["LatestThreads"] = latestThreads
+	templateData["LatestReplies"] = latestReplies
+	templateData["LatestFiles"] = latestFiles
 
 	err = tmpl.ExecuteTemplate(w, "base", &templateData)
 	if err != nil {

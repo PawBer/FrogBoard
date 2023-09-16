@@ -91,6 +91,36 @@ func (m *ReplyModel) GetRepliesToThreads(boardId string, threads ...*Thread) err
 	return nil
 }
 
+func (m *ReplyModel) GetLatestRepliesFromEveryThread() ([]*Reply, error) {
+	var replies []*Reply
+
+	query, params, _ := goqu.From("replies").Select("id", "board_id", "thread_id", "content").Order(goqu.I("id").Desc()).Limit(20).ToSQL()
+
+	rows, err := m.DbConn.Query(query, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var id, threadId uint
+		var boardId, content string
+
+		rows.Scan(&id, &boardId, &threadId, &content)
+		reply := &Reply{
+			Post: Post{
+				ID:      id,
+				BoardID: boardId,
+				Content: content,
+			},
+			ThreadID: threadId,
+		}
+
+		replies = append(replies, reply)
+	}
+
+	return replies, nil
+}
+
 func (m *ReplyModel) GetLatestReplies(boardId string, limit int, threads ...*Thread) error {
 	var replies []*Reply
 

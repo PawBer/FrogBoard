@@ -40,6 +40,36 @@ func (m *ThreadModel) GetThreadCount(boardId string) (uint, error) {
 	return count, nil
 }
 
+func (m *ThreadModel) GetLatestFromEveryBoard() ([]*Thread, error) {
+	var threads []*Thread
+
+	query, params, _ := goqu.From("threads").Select("id", "board_id", "content", "title").Order(goqu.I("last_bump").Desc()).Limit(20).ToSQL()
+
+	rows, err := m.DbConn.Query(query, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var id uint
+		var boardId, content, title string
+
+		rows.Scan(&id, &boardId, &content, &title)
+		thread := &Thread{
+			Post: Post{
+				ID:      id,
+				BoardID: boardId,
+				Content: content,
+			},
+			Title: title,
+		}
+
+		threads = append(threads, thread)
+	}
+
+	return threads, nil
+}
+
 func (m *ThreadModel) GetLatest(boardId string, pageNumber, itemsPerPage uint) ([]*Thread, error) {
 	var threads []*Thread
 
