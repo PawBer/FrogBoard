@@ -4,7 +4,7 @@
     <h1 class="font-semibold text-xl mb-4">Boards</h1>
     <div class="flex flex-col">
         {{if eq GetPermission 0}}
-        <a class="text-blue-500 hover:underline self-end m-1" href="/admin/boards/create/">Create</a>
+        <a class="text-blue-500 hover:underline self-end m-1" href="/admin/board/create/">Create</a>
         {{end}}
         <table class="bg-white w-fit text-left mb-4">
             <thead class="bg-gray-50">
@@ -61,5 +61,41 @@
             </tbody>
         </table>
     </div>
+    {{if eq GetPermission 0}}
+    <h1 class="font-semibold text-xl mb-4">Users</h1>
+    <div class="flex flex-col">
+        <a class="text-blue-500 hover:underline self-end m-1" href="/admin/users/create/">Create</a>
+        <table class="bg-white w-fit text-left mb-4">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3">Username</th>
+                    <th class="px-6 py-3">Display Name</th>
+                    <th class="px-6 py-3">Permission</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody class="space-y-2 divide-y-2">
+            {{range .Users}}
+                <tr>
+                    <td class="px-6 py-3">{{.Username}}</td>
+                    <td class="px-6 py-3">{{.DisplayName}}</td>
+                    <td class="px-6 py-3">
+                        {{if eq .Permission 0}}
+                        Administrator
+                        {{else if eq .Permission 1}}
+                        Moderator
+                        {{end}}
+                    </td>
+                    <td class="px-6 py-3"><a class="hover:underline" href="/admin/users/{{.Username}}/edit/">Edit</a></td>
+                    <td class="px-6 py-3"><a class="hover:underline" href="/admin/users/{{.Username}}/passwordreset/">Password Reset</a></td>
+                    <td class="px-6 py-3"><a class="hover:underline" href="/admin/users/{{.Username}}/delete/">Delete</a></td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{end}}
 </div>
 {{end}}

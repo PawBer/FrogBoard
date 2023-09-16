@@ -71,6 +71,7 @@ func (app *Application) PostLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.Sessions.Put(r.Context(), "authenticated", true)
+	app.Sessions.Put(r.Context(), "username", user.Username)
 	app.Sessions.Put(r.Context(), "display-name", user.DisplayName)
 	app.Sessions.Put(r.Context(), "permission", int(user.Permission))
 
@@ -85,6 +86,7 @@ func (app *Application) PostLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.Sessions.Remove(r.Context(), "authenticated")
+	app.Sessions.Remove(r.Context(), "username")
 	app.Sessions.Remove(r.Context(), "display-name")
 	app.Sessions.Remove(r.Context(), "permission")
 

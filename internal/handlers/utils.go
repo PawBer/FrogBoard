@@ -23,6 +23,16 @@ func (app *Application) getTemplateData(r *http.Request) (map[string]interface{}
 		"Boards": boards,
 	}
 
+	if app.Sessions.Exists(r.Context(), "authenticated") {
+		user := models.User{
+			Username:    app.Sessions.GetString(r.Context(), "username"),
+			DisplayName: app.Sessions.GetString(r.Context(), "display-name"),
+			Permission:  models.UserPermission(app.Sessions.GetInt(r.Context(), "permission")),
+		}
+
+		templateData["CurrentUser"] = user
+	}
+
 	return templateData, nil
 }
 

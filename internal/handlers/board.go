@@ -51,6 +51,9 @@ func (app *Application) GetBoard(w http.ResponseWriter, r *http.Request) {
 	for i := 1; i <= int(pageCount); i++ {
 		pageNumbers = append(pageNumbers, i)
 	}
+	if len(pageNumbers) == 0 {
+		pageNumbers = []int{1}
+	}
 
 	threads, err := app.ThreadModel.GetLatest(boardId, pageNumber, 10)
 	if err != nil {

@@ -19,6 +19,12 @@ func (app *Application) GetAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	users, err := app.UserModel.GetUsers()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
 	templateData, err := app.getTemplateData(r)
 	if err != nil {
 		app.serverError(w, err)
@@ -26,6 +32,7 @@ func (app *Application) GetAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	templateData["Bans"] = bans
+	templateData["Users"] = users
 
 	err = tmpl.ExecuteTemplate(w, "base", &templateData)
 	if err != nil {

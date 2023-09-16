@@ -79,6 +79,18 @@ func (app *Application) getAdminRouter() http.Handler {
 	router.Post("/bans/create/", app.PostBanCreate)
 	router.Get("/bans/{ip}/delete/", app.GetBanDelete)
 	router.Post("/bans/{ip}/delete/", app.PostBanDelete)
+	router.Get("/users/create/", app.GetUserCreate)
+	router.Post("/users/create/", app.PostUserCreate)
+	router.Get("/users/create/success/", app.GetUserCreateSuccess)
+	router.Get("/users/{username}/edit/", app.GetUserEdit)
+	router.Post("/users/{username}/edit/", app.PostUserEdit)
+	router.Get("/users/{username}/delete/", app.GetUserDelete)
+	router.Post("/users/{username}/delete/", app.PostUserDelete)
+	router.Get("/users/{username}/passwordreset/", app.GetPasswordReset)
+	router.Post("/users/{username}/passwordreset/", app.PostPasswordReset)
+	router.Get("/users/{username}/passwordreset/success/", app.GetPasswordResetSuccess)
+	router.Get("/users/passwordchange/", app.GetPasswordChange)
+	router.Post("/users/passwordchange/", app.PostPasswordChange)
 
 	return router
 }

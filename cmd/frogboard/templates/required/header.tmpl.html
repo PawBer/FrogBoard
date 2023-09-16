@@ -5,6 +5,8 @@
             <div class="flex flex-row-reverse w-full">
                 {{if IsAuthenticated}}
                 <div class="ml-auto py-1 space-x-2 flex">
+                    <span>{{.CurrentUser.DisplayName}}</span>
+                    <a href="/admin/users/passwordchange/">Change Password</a>
                     <a href="/admin/">Panel</a>
                     <form action="/logout/" method="post">
                     <button type="submit">Logout</button>

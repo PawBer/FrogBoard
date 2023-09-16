@@ -5,6 +5,7 @@ import (
 	"embed"
 	"errors"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -34,6 +35,8 @@ var public embed.FS
 var migrations embed.FS
 
 func main() {
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	infoLog := log.New(os.Stdout, "INFO ", log.Ltime)
 	errorLog := log.New(os.Stderr, "WARNING ", log.Ldate|log.Ltime|log.Lshortfile)
 
