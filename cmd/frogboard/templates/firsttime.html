@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frogboard Setup</title>
+</head>
+<body>
+    <h1>Welcome to FrogBoard</h1>
+    <p>Please input all configuration options and click submit to finish setup.</p>
+    <form method="post">
+        <h2>Gernal</h2>
+        <label for="port">Port</label>
+        <input type="text" name="port" required>
+        <h2>Postgres</h2>
+        <label for="postgres-host">Host</label>
+        <input type="text" name="postgres-host" required>
+        <br>
+        <label for="postgres-port">Port</label>
+        <input type="text" name="postgres-port" required>
+        <br>
+        <label for="postgres-db-name">Database Name</label>
+        <input type="text" name="postgres-db-name" required>
+        <br>
+        <label for="postgres-username">Username</label>
+        <input type="text" name="postgres-username" required>
+        <br>
+        <label for="postgres-password">Password</label>
+        <input type="text" name="postgres-password" required>
+        <h2>Redis</h2>
+        <label for="redis-host">Host</label>
+        <input type="text" name="redis-host" required>
+        <br>
+        <label for="redis-port">Port</label>
+        <input type="text" name="redis-port" required>
+        <br>
+        <h2>File Storage</h2>
+        <label for="contactChoice1">File System</label>
+        <input type="radio" name="filestorage-type" value="fs"/>
+        <br>
+        <label for="fs-path">Storage Path</label>
+        <input type="text" name="fs-path" value="/var/frogboard/filestorage" required>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

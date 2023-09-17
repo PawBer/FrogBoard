@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/PawBer/FrogBoard/internal/handlers"
 	"github.com/PawBer/FrogBoard/internal/models"
 	"github.com/PawBer/FrogBoard/pkg/filestorage"
@@ -17,6 +18,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/form"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -34,14 +36,65 @@ var public embed.FS
 //go:embed migrations
 var migrations embed.FS
 
-func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
+type Config struct {
+	Port        string
+	Db          DbConfig
+	Redis       RedisConfig
+	FileStorage FileStorage
+}
 
+type DbConfig struct {
+	Hostname  string
+	Port      string
+	TableName string
+	Username  string
+	Password  string
+}
+
+type RedisConfig struct {
+	Hostname string
+	Port     string
+}
+
+type FileStorage struct {
+	Type string
+	Fs   struct {
+		Path string
+	}
+}
+
+func main() {
 	infoLog := log.New(os.Stdout, "INFO ", log.Ltime)
 	errorLog := log.New(os.Stderr, "WARNING ", log.Ldate|log.Ltime|log.Lshortfile)
 
-	connStr := "host=db user=frogboard dbname=frogboard password=frogboardpassword sslmode=disable"
-	dbConn, err := sql.Open("postgres", connStr)
+	if _, err := os.Stat("/var/frogboard/config.toml"); err != nil {
+		router := chi.NewRouter()
+		router.Get("/", GetFirstRun(templates))
+		router.Post("/", PostFirstRun)
+
+		var port string
+		if os.Getenv("FROGBOARD_PORT") != "" {
+			port = os.Getenv("FROGBOARD_PORT")
+		} else {
+			port = "7543"
+		}
+
+		log.Printf("Please go to localhost:%s to start initial setup", port)
+
+		listenAddress := fmt.Sprintf(":%s", port)
+		log.Fatal(http.ListenAndServe(listenAddress, router))
+		return
+	}
+
+	config := Config{}
+	_, err := toml.DecodeFile("/var/frogboard/config.toml", &config)
+	if err != nil {
+		log.Fatalf("Error parsing config: %s", err.Error())
+	}
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", config.Db.Hostname, config.Db.Port, config.Db.Username, config.Db.TableName, config.Db.Password)
+	dbConn, _ := sql.Open("postgres", connStr)
+	err = dbConn.Ping()
 	if err != nil {
 		log.Fatalf("Error connecting to db: %s", err.Error())
 	}
@@ -60,12 +113,16 @@ func main() {
 
 	formDecoder := form.NewDecoder()
 
-	fileStore := filestorage.NewFileSystemStore("/var/frogboard/filestorage")
+	var fileStore filestorage.FileStore
+	if config.FileStorage.Type == "fs" {
+		fileStore = filestorage.NewFileSystemStore(config.FileStorage.Fs.Path)
+	}
 
+	redisConnStr := fmt.Sprintf("%s:%s", config.Redis.Hostname, config.Redis.Port)
 	pool := &redis.Pool{
 		MaxIdle: 10,
 		Dial: func() (redis.Conn, error) {
-			return redis.Dial("tcp", "redis:6379")
+			return redis.Dial("tcp", redisConnStr)
 		},
 	}
 
@@ -114,6 +171,15 @@ func main() {
 		Sessions:      sessionStore,
 	}
 
-	log.Printf("Starting server at :8080")
-	log.Fatal(http.ListenAndServe(":8080", app.GetRouter()))
+	var port string
+	if os.Getenv("FROGBOARD_PORT") != "" {
+		port = os.Getenv("FROGBOARD_PORT")
+	} else {
+		port = config.Port
+	}
+
+	log.Printf("Starting server at :%s", port)
+
+	listenAddress := fmt.Sprintf(":%s", port)
+	log.Fatal(http.ListenAndServe(listenAddress, app.GetRouter()))
 }

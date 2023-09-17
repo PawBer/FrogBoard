@@ -46,11 +46,11 @@ func (m *BoardModel) GetBoards() ([]Board, error) {
 }
 
 func (m *BoardModel) Insert(id string, name string, bumpLimit uint) error {
-	sql, params, _ := goqu.Insert("boards").Rows(
+	query, params, _ := goqu.Insert("boards").Rows(
 		goqu.Record{"id": id, "full_name": name, "last_post_id": 0, "bump_limit": bumpLimit},
 	).ToSQL()
 
-	_, err := m.DbConn.Exec(sql, params...)
+	_, err := m.DbConn.Exec(query+"ON CONFLICT DO NOTHING", params...)
 	if err != nil {
 		return err
 	}

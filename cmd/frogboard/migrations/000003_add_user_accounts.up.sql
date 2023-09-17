@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS public.users (
     display_name VARCHAR(255) NOT NULL,
     permission VARCHAR(255) NOT NULL
 );
-COMMIT:
+COMMIT;

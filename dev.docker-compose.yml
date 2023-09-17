@@ -4,8 +4,10 @@ services:
     build:
       context: .
       dockerfile: dev.Dockerfile
+    environment:
+      - FROGBOARD_PORT=80
     ports:
-      - 8080:8080
+      - 8080:80
     volumes:
       - .:/app
       - /app/node_modules

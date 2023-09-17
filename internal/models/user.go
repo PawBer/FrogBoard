@@ -54,7 +54,7 @@ func (um *UserModel) RegisterUser(username string, displayName string, permissio
 		"password_hash": passwordHash,
 	}).ToSQL()
 
-	_, err = um.DbConn.Exec(query, params...)
+	_, err = um.DbConn.Exec(query+" ON CONFLICT DO NOTHING", params...)
 	if err != nil {
 		return "", err
 	}
