@@ -3,27 +3,30 @@ services:
   app:
     build:
       context: .
-      dockerfile: dev.Dockerfile
+      dockerfile: Dockerfile
     environment:
       - FROGBOARD_PORT=80
     ports:
       - 8080:80
     volumes:
-      - .:/app
-      - /app/node_modules
-      - data:/var/frogboard
+      - data:/var/frogboard/
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:latest
     restart: always
-    command: ["postgres", "-c", "log_statement=all"]
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: frogboard
       POSTGRES_PASSWORD: frogboardpassword
-    ports:
-      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frogboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
